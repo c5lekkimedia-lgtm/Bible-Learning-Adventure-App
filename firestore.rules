@@ -1,0 +1,35 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Lessons: every device needs to read them (children and teachers alike).
+    // Only a signed-in teacher can create, edit or delete a lesson.
+    match /lessons/{lessonId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+
+      // Tighter option: only specific teacher emails may write.
+      // Replace the addresses below and swap the line above for this one
+      // if you want to restrict publishing to named teachers only.
+      // allow write: if request.auth != null &&
+      //   request.auth.token.email in ['teacher1@yourchurch.org', 'teacher2@yourchurch.org'];
+    }
+
+    // Children's profiles and progress: open by design, because children
+    // do not sign in on this app — they just pick their name on a shared
+    // tablet, optionally protected by a 4-digit PIN they set when their
+    // profile was created. That PIN is stored here as a SHA-256 hash
+    // (never the plain digits), which stops a child from casually opening
+    // someone else's page. It does NOT make this collection private:
+    // anyone with the app's link can still read or write these documents
+    // directly (including the PIN hash), so this remains a reasonable
+    // trade-off for a small, trusted Sunday School setting — not something
+    // to rely on if the link were ever made public.
+    match /profiles/{profileId} {
+      allow read, write: if true;
+    }
+    match /progress/{profileId} {
+      allow read, write: if true;
+    }
+  }
+}

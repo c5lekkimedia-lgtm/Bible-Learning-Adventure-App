@@ -1,0 +1,1539 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bible Adventure — The Covenant Nation Lekki</title>
+<style>
+  :root{
+    --purple:#6B3FA0; --purple-dark:#4B2470; --gold:#F0B429; --gold-dark:#C98A0C;
+    --green:#1E8A4C; --green-light:#E6F6EC; --cream:#FFFBF0; --paper:#FFF6E0;
+    --ink:#2E2145; --muted:#6B6178; --white:#FFFFFF; --red:#D14343; --blue:#2E6FB0;
+    --border:#EBD9A8;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Segoe UI',Arial,Helvetica,sans-serif;background:var(--cream);color:var(--ink)}
+  button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+  .app{display:flex;min-height:100vh}
+  aside{width:230px;background:linear-gradient(180deg,var(--purple),var(--purple-dark));color:white;
+    padding:22px 14px;position:fixed;inset:0 auto 0 0;display:flex;flex-direction:column;z-index:5}
+  .logo{font-size:21px;font-weight:800;line-height:1.15;margin:0 8px 26px}
+  .logo span{display:block;color:var(--gold);font-size:12px;margin-top:6px;font-weight:600}
+  nav{display:flex;flex-direction:column;gap:3px}
+  nav button{width:100%;border:0;background:transparent;color:white;text-align:left;
+    padding:12px 13px;border-radius:12px;font-size:14.5px;cursor:pointer;display:flex;gap:10px;align-items:center;font-family:inherit}
+  nav button:hover,nav button.active{background:rgba(255,255,255,.18)}
+  .navicon{font-size:18px;width:20px;text-align:center}
+  .sidebar-foot{margin-top:auto;font-size:11.5px;color:#D9C7F0;padding:8px;line-height:1.5}
+  main{margin-left:230px;width:calc(100% - 230px);padding:26px 30px 60px;max-width:1200px}
+  .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;gap:12px;flex-wrap:wrap}
+  .pill{background:var(--green-light);color:var(--green);font-weight:700;padding:7px 13px;border-radius:30px;font-size:12.5px}
+  h1{font-size:27px;margin:0 0 6px;color:var(--purple-dark)}
+  h2{font-size:19px;margin:0 0 10px;color:var(--purple-dark)}
+  h3{margin:0 0 6px;color:var(--purple-dark);font-size:15.5px}
+  p{line-height:1.55}
+  .muted{color:var(--muted);font-size:12.5px}
+  .screen{display:none}.screen.active{display:block}
+  .hero{background:linear-gradient(135deg,#FFF3D6,#F3E9FF);border:1px solid var(--border);border-radius:22px;
+    padding:26px;display:grid;grid-template-columns:1.5fr 1fr;gap:20px;align-items:center;position:relative;overflow:hidden}
+  .hero-emoji{font-size:64px;text-align:center}
+  .hero-thumb{width:100%;height:150px;object-fit:cover;border-radius:16px;border:2px solid rgba(255,255,255,.7)}
+  .tag{display:inline-block;padding:5px 11px;border-radius:20px;background:#F0E4FF;color:var(--purple);
+    font-size:11.5px;font-weight:800;letter-spacing:.4px;margin-right:6px}
+  .hero-title{font-size:30px;font-weight:900;color:var(--purple-dark);margin:8px 0 6px}
+  .hero-sub{font-size:14.5px;color:var(--muted);margin-bottom:10px}
+  .btn{border:0;border-radius:12px;padding:11px 18px;font-weight:800;cursor:pointer;background:var(--purple);
+    color:white;font-size:14px;font-family:inherit}
+  .btn:hover{background:var(--purple-dark)}
+  .btn.secondary{background:white;color:var(--purple);border:1.5px solid #D8C4EE}
+  .btn.green{background:var(--green)}
+  .btn.gold{background:var(--gold);color:var(--purple-dark)}
+  .btn.danger{background:#fff;color:var(--red);border:1.5px solid #F3C2C2}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .grid{display:grid;gap:14px;margin-top:16px}
+  .grid4{grid-template-columns:repeat(4,1fr)}
+  .grid3{grid-template-columns:repeat(3,1fr)}
+  .grid2{grid-template-columns:repeat(2,1fr)}
+  .card{background:white;border:1px solid var(--border);border-radius:16px;padding:17px;box-shadow:0 2px 10px rgba(60,30,90,.05)}
+  .stat{font-size:25px;font-weight:900;color:var(--purple)}
+  .icon{font-size:26px;margin-bottom:6px}
+  .progress{height:9px;background:#F0E9DA;border-radius:20px;overflow:hidden;margin:8px 0}
+  .progress>div{height:100%;background:var(--gold)}
+  .lesson-card{background:white;border:1px solid var(--border);border-radius:18px;padding:20px}
+  .smallcard{padding:14px;border-radius:14px;background:var(--paper);border:1px solid var(--border)}
+  .week-card{background:white;border:1px solid var(--border);border-radius:16px;padding:16px;cursor:pointer;transition:.15s;text-align:left;font-family:inherit;width:100%}
+  .week-card:hover{border-color:var(--purple);box-shadow:0 3px 12px rgba(107,63,160,.12)}
+  .week-card .wk-tag{font-size:11px;color:var(--gold-dark);font-weight:800;letter-spacing:.4px}
+  .week-thumb{width:100%;height:96px;object-fit:cover;border-radius:12px;margin-bottom:10px;border:1px solid var(--border)}
+  .lesson-banner{position:relative;border-radius:20px;overflow:hidden;margin-bottom:16px;min-height:210px;
+    display:flex;align-items:flex-end;background:linear-gradient(135deg,#FFF3D6,#F3E9FF)}
+  .lesson-banner .banner-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .lesson-banner .scrim{position:absolute;inset:0;background:linear-gradient(180deg,rgba(46,33,69,.15) 0%,rgba(46,33,69,.55) 55%,rgba(46,33,69,.85) 100%)}
+  .lesson-banner .banner-text{position:relative;padding:22px;color:#fff;max-width:760px}
+  .lesson-banner .banner-text h2{color:#fff;font-size:26px;margin:6px 0 4px;text-shadow:0 2px 12px rgba(0,0,0,.45)}
+  .lesson-banner .banner-text p{margin:0;color:#F3E9FF;font-size:14px;text-shadow:0 1px 8px rgba(0,0,0,.5)}
+  .lesson-banner .tag{background:rgba(255,255,255,.92)}
+  .lesson-banner.no-image{min-height:0}
+  .lesson-banner.no-image .scrim{background:none}
+  .lesson-banner.no-image .banner-text{color:var(--ink)}
+  .lesson-banner.no-image .banner-text h2{color:var(--purple-dark);text-shadow:none}
+  .lesson-banner.no-image .banner-text p{color:var(--muted);text-shadow:none}
+  .activity-wrap{position:relative;border-radius:18px;overflow:hidden;padding:2px}
+  .activity-bg{position:absolute;inset:0;background-size:cover;background-position:center;opacity:.10;pointer-events:none;filter:saturate(.85)}
+  .activity-wrap>*:not(.activity-bg){position:relative}
+  .activity-box{min-height:280px;background:rgba(255,255,255,.93);backdrop-filter:blur(1px)}
+  .activity-nav{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
+  .activity-nav button{border:1.5px solid #D8C4EE;background:white;color:var(--purple);border-radius:11px;
+    padding:9px 13px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+  .activity-nav button.active,.activity-nav button:hover{background:var(--purple);color:white;border-color:var(--purple)}
+  .question{font-size:19px;font-weight:800;margin:10px 0 16px;color:var(--purple-dark)}
+  .options{display:grid;grid-template-columns:repeat(2,1fr);gap:11px}
+  .option{padding:14px;background:var(--paper);border:2px solid var(--border);border-radius:13px;cursor:pointer;
+    font-weight:700;font-size:14px;font-family:inherit;text-align:left;width:100%;color:var(--ink)}
+  .option:hover{border-color:var(--purple);background:#F3E9FF}
+  .option.correct{background:var(--green-light);border-color:var(--green);color:var(--green)}
+  .option.wrong{background:#FDEBEB;border-color:var(--red);color:var(--red)}
+  .feedback{margin-top:14px;font-weight:800;min-height:22px;font-size:14.5px}
+  .grid-scroll{overflow-x:auto;padding-bottom:6px}
+  .word-grid{display:grid;gap:3px;justify-content:center;margin:16px auto;user-select:none;width:max-content}
+  .letter{border:1px solid #E5D9BC;border-radius:6px;display:flex;align-items:center;justify-content:center;
+    font-weight:800;background:#fff;cursor:pointer;font-size:13.5px;font-family:inherit;padding:0}
+  .letter.sel{background:#F0E4FF;border-color:var(--purple)}
+  .letter.found{background:var(--green-light);border-color:var(--green);color:var(--green)}
+  .wordlist{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .wordlist span{padding:5px 11px;border-radius:20px;background:var(--paper);border:1px solid var(--border);font-size:12.5px;font-weight:700}
+  .wordlist span.done{background:var(--green-light);color:var(--green);border-color:var(--green);text-decoration:line-through}
+  .verse-bank{display:flex;flex-wrap:wrap;gap:9px;margin:14px 0;min-height:46px;padding:10px;background:var(--paper);border-radius:12px;border:1px dashed var(--border)}
+  .verse-answer{display:flex;flex-wrap:wrap;gap:9px;min-height:46px;padding:10px;background:#fff;border:2px solid var(--border);border-radius:12px;margin-bottom:10px}
+  .vchip{padding:8px 13px;background:white;border:1.5px solid #D8C4EE;border-radius:9px;cursor:pointer;font-weight:700;font-size:13.5px;font-family:inherit}
+  .vchip:hover{background:#F3E9FF}
+  table{width:100%;border-collapse:collapse;background:white;border-radius:14px;overflow:hidden;font-size:13px}
+  th,td{padding:10px 11px;border-bottom:1px solid #F0E9DA;text-align:left}
+  th{background:var(--paper);color:var(--purple-dark)}
+  .table-scroll{overflow-x:auto}
+  .input,textarea.input,select.input{padding:10px;border:1.5px solid #D8C4EE;border-radius:9px;width:100%;font-family:inherit;font-size:13.5px;background:#fff}
+  textarea.input{resize:vertical}
+  label.field{display:block;font-size:12.5px;font-weight:700;color:var(--purple-dark);margin:10px 0 4px}
+  .badge{width:118px;text-align:center;padding:14px 8px;border-radius:16px;background:#FFF6DB;border:1px solid #F0D27B}
+  .badge.locked{opacity:.4}
+  .badge .big{font-size:34px}
+  .badge-row{display:flex;gap:13px;flex-wrap:wrap}
+  .banner{padding:12px 16px;border-radius:12px;font-weight:700;font-size:13.5px;margin-bottom:14px}
+  .banner.warn{background:#FFF3D6;color:#8A5A00;border:1px solid #F0D27B}
+  .banner.ok{background:var(--green-light);color:var(--green);border:1px solid #B7E3C6}
+  .banner.bad{background:#FDEBEB;color:#A32B2B;border:1px solid #F3C2C2}
+  .toolbar{display:flex;gap:9px;flex-wrap:wrap;margin:12px 0}
+  .character-clue{background:var(--paper);border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:14px}
+  .treasure-row{display:flex;align-items:center;gap:14px;background:white;border:1px solid var(--border);border-radius:14px;padding:12px 16px;margin-bottom:10px}
+  .treasure-choice{flex:1;padding:11px;border-radius:11px;border:2px solid var(--border);cursor:pointer;text-align:center;font-weight:700;font-size:13.5px;font-family:inherit;background:#fff;color:var(--ink)}
+  .treasure-choice:hover{border-color:var(--purple)}
+  .treasure-choice.correct{background:var(--green-light);border-color:var(--green);color:var(--green)}
+  .treasure-choice.wrong{background:#FDEBEB;border-color:var(--red);color:var(--red)}
+  .footer-note{margin-top:16px;color:var(--muted);font-size:12px;line-height:1.6}
+  .modal-overlay{position:fixed;inset:0;background:rgba(46,33,69,.55);display:flex;align-items:center;justify-content:center;z-index:50;padding:20px}
+  .modal-overlay.hidden{display:none}
+  .modal-card{background:var(--cream);border-radius:22px;padding:30px;max-width:480px;width:100%;box-shadow:0 12px 40px rgba(0,0,0,.25);max-height:88vh;overflow:auto}
+  .modal-card h2{font-size:23px;margin-bottom:4px}
+  .age-options{display:flex;flex-direction:column;gap:10px;margin:16px 0}
+  .age-btn{display:flex;align-items:center;gap:12px;padding:13px 15px;border-radius:14px;border:2px solid var(--border);background:white;cursor:pointer;text-align:left;font-family:inherit;width:100%}
+  .age-btn:hover{border-color:var(--purple)}
+  .age-btn.selected{border-color:var(--purple);background:#F3E9FF}
+  .age-btn .ab-emoji{font-size:26px}
+  .age-btn .ab-label{font-weight:800;color:var(--purple-dark);font-size:14.5px}
+  .age-btn .ab-range{font-size:12px;color:var(--muted)}
+  .profile-row{display:flex;gap:8px;align-items:center}
+  .profile-row .age-btn{flex:1}
+  .mini-btn{border:1.5px solid #D8C4EE;background:#fff;border-radius:10px;padding:9px 10px;cursor:pointer;font-family:inherit;font-size:13px}
+  .profile-chip{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.14);border-radius:12px;padding:9px 11px;margin-bottom:14px;cursor:pointer;font-size:12.5px;border:0;color:#fff;font-family:inherit;width:100%;text-align:left}
+  .profile-chip:hover{background:rgba(255,255,255,.22)}
+  .profile-chip .pc-emoji{font-size:20px}
+  .sheep-count{font-size:30px;letter-spacing:4px;line-height:1.5;background:var(--paper);border:1px solid var(--border);border-radius:14px;padding:16px;text-align:center;margin:14px 0}
+  .reflect-box{width:100%;min-height:90px;padding:12px;border:1.5px solid #D8C4EE;border-radius:11px;font-family:inherit;font-size:13.5px}
+  .teacher-nav{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 18px;padding:8px;background:white;border:1px solid var(--border);border-radius:16px;position:sticky;top:8px;z-index:5;box-shadow:0 5px 18px rgba(46,33,69,.06)}
+  .teacher-nav button{border:0;background:transparent;padding:10px 13px;border-radius:11px;font-family:inherit;font-weight:800;color:var(--purple-dark);cursor:pointer}
+  .teacher-nav button.selected,.teacher-nav button:hover{background:#F3E9FF;color:var(--purple)}
+  .teacher-nav .spacer{flex:1}
+  .teacher-hero{display:flex;justify-content:space-between;align-items:center;gap:20px;background:linear-gradient(135deg,#FFF8E8,#F4ECFF);border:1px solid var(--border);border-radius:22px;padding:24px;margin-bottom:18px}
+  .teacher-hero h1{margin:2px 0 6px}.teacher-hero p{margin:0;color:var(--muted)}.teacher-hero-icon{font-size:58px}
+  .section-head{display:flex;justify-content:space-between;gap:15px;align-items:flex-start;margin-bottom:15px}
+  .section-head h1,.section-head h2{margin:0 0 4px}
+  .action-card{min-height:155px}.action-card p{color:var(--muted);min-height:42px}
+  .status{display:inline-block;padding:5px 9px;border-radius:999px;font-size:11px;font-weight:900}
+  .status-live{background:#E6F6EC;color:#187A3D}.status-review{background:#FFF3D6;color:#8A5A00}.status-draft{background:#F0E9F8;color:#6D4AA5}
+  .img-drop{border:2px dashed #D8C4EE;border-radius:16px;padding:18px;text-align:center;background:#FCF9FF}
+  .img-preview{width:100%;max-height:230px;object-fit:cover;border-radius:14px;border:1px solid var(--border)}
+  .img-meta{font-size:12px;color:var(--muted);margin-top:8px}
+  .login-wrap{max-width:420px;margin:40px auto;text-align:center}
+  .login-card{background:white;border:1px solid var(--border);border-radius:22px;padding:30px;box-shadow:0 8px 30px rgba(60,30,90,.08);text-align:left}
+  .login-card h1{text-align:center}
+  .pin-input{font-size:28px;letter-spacing:14px;text-align:center;padding:12px;width:100%;border:2px solid #D8C4EE;border-radius:14px;font-family:inherit;background:#fff}
+  .pinpad{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:14px}
+  .pinpad button{padding:15px 0;font-size:19px;font-weight:800;border:1.5px solid #D8C4EE;background:#fff;border-radius:13px;cursor:pointer;font-family:inherit;color:var(--purple-dark)}
+  .pinpad button:hover{background:#F3E9FF}
+  .config-banner{max-width:640px;margin:40px auto;text-align:left}
+  @media(max-width:880px){
+    aside{width:64px;padding:16px 8px}.logo{font-size:0;text-align:center}.logo:before{content:"🐑";font-size:24px}
+    .logo span{display:none}nav button{font-size:0;justify-content:center;padding:12px 6px}
+    .navlabel{display:none}.sidebar-foot{display:none}
+    .profile-chip{justify-content:center;padding:9px 4px}.profile-chip span:not(.pc-emoji){display:none}
+    main{margin-left:64px;width:calc(100% - 64px);padding:16px}
+    .hero{grid-template-columns:1fr}.grid4{grid-template-columns:repeat(2,1fr)}
+    .grid3{grid-template-columns:1fr}.grid2{grid-template-columns:1fr}.options{grid-template-columns:1fr}
+    .lesson-banner .banner-text h2{font-size:21px}
+  }
+  @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div id="configScreen" class="config-banner" style="display:none"></div>
+<div id="profileModal" class="modal-overlay hidden"><div class="modal-card" id="profileModalInner"></div></div>
+<div class="app" id="appRoot" style="display:none">
+  <aside>
+    <div class="logo">🌟 BIBLE ADVENTURE<span>The Covenant Nation Lekki</span></div>
+    <button class="profile-chip" id="profileChip" onclick="openProfileModal()"><span class="pc-emoji">🐑</span><span id="profileChipText">Set up profile</span></button>
+    <nav id="mainNav">
+      <button class="active" data-screen="home" onclick="go('home',this)"><span class="navicon">🏠</span><span class="navlabel">Home</span></button>
+      <button data-screen="lesson" onclick="go('lesson',this)"><span class="navicon">📖</span><span class="navlabel">This Week</span></button>
+      <button data-screen="activity" onclick="go('activity',this)"><span class="navicon">🎮</span><span class="navlabel">Activities</span></button>
+      <button data-screen="badges" onclick="go('badges',this)"><span class="navicon">🏆</span><span class="navlabel">My Badges</span></button>
+      <button data-screen="teacher" onclick="go('teacher',this)"><span class="navicon">🧑‍🏫</span><span class="navlabel">Teacher</span></button>
+    </nav>
+    <div class="sidebar-foot" id="sidebarFoot">Learn it. Play it. Remember it. Live it.</div>
+  </aside>
+  <main>
+    <div class="topbar">
+      <div><strong>Sunday School Digital Companion</strong><div class="muted" id="topbarSub">Weekly interactive Bible learning</div></div>
+      <div style="display:flex;gap:10px;align-items:center">
+        <span class="pill" id="syncPill" style="background:#F0E9F8;color:#6D4AA5">🔄 Connecting…</span>
+        <span class="pill" id="pointsPill">⭐ 0 Adventure Points</span>
+      </div>
+    </div>
+    <section id="home" class="screen active"></section>
+    <section id="lesson" class="screen"></section>
+    <section id="activity" class="screen"></section>
+    <section id="badges" class="screen"></section>
+    <section id="teacher" class="screen"></section>
+  </main>
+</div>
+
+<script type="module">
+/* =====================================================================
+   FIREBASE SETUP — paste your project's config below.
+   Firebase console → Project settings → General → Your apps → Web app.
+   See SETUP.md for the full step-by-step guide (free tier is enough
+   for a Sunday School's worth of children).
+   ===================================================================== */
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT",
+  storageBucket: "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+import {
+  getFirestore, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc,
+  collection, onSnapshot, query, orderBy, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+import {
+  getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut,
+  EmailAuthProvider, reauthenticateWithCredential, updatePassword
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+
+let db=null, auth=null, dbReady=false;
+const isPlaceholder = !firebaseConfig.apiKey || firebaseConfig.apiKey.startsWith('YOUR_');
+if(!isPlaceholder){
+  try{
+    const fbApp = initializeApp(firebaseConfig);
+    db = getFirestore(fbApp);
+    auth = getAuth(fbApp);
+    dbReady = true;
+  }catch(e){ console.error('Firebase init failed', e); }
+}
+if(!dbReady){
+  document.getElementById('configScreen').style.display='block';
+  document.getElementById('configScreen').innerHTML = `
+    <div class="login-card">
+      <h1>⚙️ Firebase not configured yet</h1>
+      <p>This copy of Bible Adventure hasn't been connected to a Firebase project, so it can't
+      share lessons or children's progress across devices yet.</p>
+      <p class="muted">Open this file, find the <code>firebaseConfig</code> object near the top of the
+      script, and paste in your project's web app config. Full steps are in <code>SETUP.md</code>,
+      which was delivered alongside this file.</p>
+    </div>`;
+} else {
+  document.getElementById('appRoot').style.display='flex';
+}
+
+/* Expose the functions the inline onclick="" handlers in the HTML call. */
+const api = {};
+window.addEventListener('DOMContentLoaded', ()=>{ boot(); });
+
+/* ===================== CONSTANTS ===================== */
+const AGE_GROUPS = {
+  '3-5':  {label:'Little Lambs', range:'Ages 3–5',  emoji:'🐣'},
+  '6-9':  {label:'Explorers',    range:'Ages 6–9',  emoji:'🐑'},
+  '10-12':{label:'Voyagers',     range:'Ages 10–12',emoji:'🦁'}
+};
+const BLANK_PROGRESS = {completed:{}, scores:{}, playCounts:{}, points:0, whoAmICorrect:0, lastActive:null};
+const MAX_LESSON_DOC_BYTES = 900000; // stay safely under Firestore's 1 MiB document limit
+
+/* ===================== STATE ===================== */
+let STATE = { lessons: [] };
+let PROFILES = [];
+let currentLessonId = null;
+let currentActivity = 'quiz';
+let renderToken = 0;
+let teacherUnlocked = false;
+let teacherEmail = '';
+let PROGRESS = normalizeProgress({});
+let activeProfileId = null;
+try{ activeProfileId = localStorage.getItem('bibleAdventureActiveId') || null; }catch(e){}
+
+function normalizeProgress(p){
+  const out = Object.assign({}, BLANK_PROGRESS, p||{});
+  out.completed = out.completed || {};
+  out.scores = out.scores || {};
+  out.playCounts = out.playCounts || {};
+  out.points = Number(out.points)||0;
+  return out;
+}
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+async function sha256(text){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+function setSyncPill(state){
+  const el = document.getElementById('syncPill'); if(!el) return;
+  if(state==='ok'){ el.textContent='☁️ Synced'; el.style.background='#E6F6EC'; el.style.color='#1E8A4C'; }
+  else if(state==='offline'){ el.textContent='⚠️ Offline — saved on this device'; el.style.background='#FFF3D6'; el.style.color='#8A5A00'; }
+  else { el.textContent='🔄 Connecting…'; el.style.background='#F0E9F8'; el.style.color='#6D4AA5'; }
+}
+
+/* ===================== FIRESTORE: LESSONS (live) ===================== */
+function watchLessons(){
+  if(!dbReady) return;
+  const q = query(collection(db,'lessons'), orderBy('seq'));
+  onSnapshot(q, snap=>{
+    STATE.lessons = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    setSyncPill('ok');
+    if(!currentLessonId || !STATE.lessons.some(l=>l.id===currentLessonId)){
+      const pick = pickCurrentLesson();
+      currentLessonId = pick ? pick.id : null;
+    }
+    // Never force-refresh an open lesson editor: a background lesson update
+    // (including the teacher's own in-flight publish) would otherwise wipe
+    // out characters, quiz JSON and other fields the teacher hasn't saved yet.
+    if(isEditingLessonScreen()) return;
+    refreshCurrentScreen();
+  }, err=>{ console.error(err); setSyncPill('offline'); });
+}
+function isEditingLessonScreen(){
+  const teacherScreen = document.getElementById('teacher');
+  return !!(teacherScreen && teacherScreen.classList.contains('active') && teacherSection==='editor');
+}
+function getLesson(id){ return STATE.lessons.find(l=>l.id===id) || STATE.lessons[0] || null; }
+function parseLessonDate(s){ const t = Date.parse(String(s||'').replace(/^[A-Za-z]+,\s*/,'')); return isNaN(t)?null:t; }
+function pickCurrentLesson(){
+  if(!STATE.lessons.length) return null;
+  const live = STATE.lessons.filter(l=>(l.status||'Published')==='Published');
+  const pool = live.length ? live : STATE.lessons;
+  const now = Date.now();
+  let best = pool[0], bestGap = Infinity;
+  pool.forEach(l=>{ const t=parseLessonDate(l.date); if(t===null) return; const gap=Math.abs(now-t); if(gap<bestGap){bestGap=gap; best=l;} });
+  return best;
+}
+function lessonImage(l){ return (l && typeof l.image==='string' && l.image.startsWith('data:image')) ? l.image : ''; }
+
+/* ===================== FIRESTORE: PROFILES (shared class roster, live) ===================== */
+function watchProfiles(){
+  if(!dbReady) return;
+  onSnapshot(collection(db,'profiles'), snap=>{
+    PROFILES = snap.docs.map(d=>({id:d.id, ...d.data()})).sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+    renderProfileChip();
+    if(document.getElementById('profileModal') && !document.getElementById('profileModal').classList.contains('hidden')) renderProfileModal();
+    // Same rule as the lessons listener: never force-redraw an open lesson
+    // editor just because a child somewhere added or changed a profile.
+    if(isEditingLessonScreen()) return;
+    if(document.getElementById('teacher').classList.contains('active')) renderTeacher();
+  }, err=>console.error(err));
+}
+function getActiveProfile(){ return PROFILES.find(p=>p.id===activeProfileId) || null; }
+function ageLabel(){ const p=getActiveProfile(); return p ? AGE_GROUPS[p.ageGroup].range : AGE_GROUPS['6-9'].range; }
+function ageKey(){ const p=getActiveProfile(); return p ? p.ageGroup : '6-9'; }
+
+/* ===================== PROGRESS (per child, synced to Firestore, cached locally as an offline fallback) ===================== */
+function loadLocalProgressCache(id){ try{ return JSON.parse(localStorage.getItem('bibleAdventureProgress_'+id)||'{}'); }catch(e){ return {}; } }
+function saveLocalProgressCache(id,p){ try{ localStorage.setItem('bibleAdventureProgress_'+id, JSON.stringify(p)); }catch(e){} }
+async function persistProgress(){
+  if(!activeProfileId) return;
+  saveLocalProgressCache(activeProfileId, PROGRESS);
+  if(!dbReady){ setSyncPill('offline'); return; }
+  try{ await setDoc(doc(db,'progress',activeProfileId), PROGRESS, {merge:true}); setSyncPill('ok'); }
+  catch(e){ console.error(e); setSyncPill('offline'); }
+}
+async function loadProgressForActiveProfile(){
+  if(!activeProfileId){ PROGRESS = normalizeProgress({}); return; }
+  if(dbReady){
+    try{
+      const snap = await getDoc(doc(db,'progress',activeProfileId));
+      PROGRESS = normalizeProgress(snap.exists() ? snap.data() : loadLocalProgressCache(activeProfileId));
+      setSyncPill('ok');
+      return;
+    }catch(e){ console.error(e); setSyncPill('offline'); }
+  }
+  PROGRESS = normalizeProgress(loadLocalProgressCache(activeProfileId));
+}
+function recordActivityScore(lessonId, type, rawScore, maxScore, countAsPlay){
+  const key = lessonId+':'+type;
+  const prev = PROGRESS.scores[key] || {score:0, max:maxScore};
+  const capped = Math.max(0, Math.min(maxScore, Math.max(prev.score, rawScore)));
+  PROGRESS.scores[key] = {score:capped, max:maxScore};
+  if(countAsPlay) PROGRESS.playCounts[key] = (PROGRESS.playCounts[key]||0) + 1;
+  markCompleted(lessonId, type);
+  PROGRESS.points = Object.values(PROGRESS.scores).reduce((s,v)=>s+v.score,0);
+  PROGRESS.lastActive = Date.now();
+  persistProgress();
+  renderPointsPill();
+}
+function totalPlays(){ return Object.values(PROGRESS.playCounts).reduce((s,v)=>s+v,0); }
+function markCompleted(lessonId, activityType){
+  PROGRESS.completed[lessonId] = PROGRESS.completed[lessonId] || {};
+  PROGRESS.completed[lessonId][activityType] = true;
+  PROGRESS.lastActive = Date.now();
+}
+function renderPointsPill(){ document.getElementById('pointsPill').textContent = '⭐ ' + (PROGRESS.points||0) + ' Adventure Points'; }
+
+/* ===================== PROFILE PICKER / EDITOR ===================== */
+let pendingAge = '6-9';
+let profileModalMode = 'pick'; // 'pick' | 'form' | 'pin'
+let editingProfileId = null;
+let pinTargetId = null, childPinBuffer = '', childPinError = '';
+
+function openProfileModal(){
+  profileModalMode = (PROFILES.length>0) ? 'pick' : 'form';
+  editingProfileId = null; pendingAge = '6-9';
+  renderProfileModal();
+  document.getElementById('profileModal').classList.remove('hidden');
+}
+function openProfileForm(existingId){
+  editingProfileId = existingId || null;
+  const existing = existingId ? PROFILES.find(p=>p.id===existingId) : null;
+  pendingAge = existing ? existing.ageGroup : '6-9';
+  profileModalMode = 'form';
+  renderProfileModal();
+  document.getElementById('profileModal').classList.remove('hidden');
+}
+function backToPicker(){ profileModalMode = PROFILES.length===0 ? 'form' : 'pick'; renderProfileModal(); }
+function closeProfileModal(){ document.getElementById('profileModal').classList.add('hidden'); }
+function renderAgeOptions(){
+  const wrap = document.getElementById('ageOptions'); if(!wrap) return;
+  wrap.innerHTML = Object.entries(AGE_GROUPS).map(([k,v])=>`
+    <button type="button" class="age-btn ${pendingAge===k?'selected':''}" onclick="pickPendingAge('${k}')">
+      <span class="ab-emoji">${v.emoji}</span>
+      <span><span class="ab-label">${esc(v.label)}</span><br><span class="ab-range">${esc(v.range)}</span></span>
+    </button>`).join('');
+}
+function pickPendingAge(k){ pendingAge=k; renderAgeOptions(); }
+
+/* Tapping a name in the picker no longer opens it directly — a child with a
+   PIN set must enter it first, so other children can't wander into their page. */
+function attemptOpenProfile(id){
+  const p = PROFILES.find(x=>x.id===id); if(!p) return;
+  if(!p.pinHash){ chooseProfile(id); return; }
+  pinTargetId = id; childPinBuffer=''; childPinError='';
+  profileModalMode = 'pin';
+  renderProfileModal();
+}
+function childPinPress(d){
+  if(childPinBuffer.length>=4) return;
+  childPinBuffer += d; childPinError='';
+  renderProfileModal();
+  if(childPinBuffer.length===4) childPinSubmit();
+}
+function childPinClear(){ childPinBuffer=''; childPinError=''; renderProfileModal(); }
+function pinBackToPicker(){ profileModalMode='pick'; childPinBuffer=''; childPinError=''; pinTargetId=null; renderProfileModal(); }
+async function childPinSubmit(){
+  const p = PROFILES.find(x=>x.id===pinTargetId);
+  if(!p){ pinBackToPicker(); return; }
+  const hash = await sha256(childPinBuffer);
+  if(hash === p.pinHash){
+    profileModalMode='pick'; pinTargetId=null;
+    await chooseProfile(p.id);
+  } else {
+    childPinBuffer=''; childPinError='That PIN is not right. Try again, or ask a teacher for help.';
+    renderProfileModal();
+  }
+}
+
+function renderProfileModal(){
+  const inner = document.getElementById('profileModalInner');
+  if(profileModalMode==='pick'){
+    inner.innerHTML = `
+      <h2>Who's playing? 🐑</h2>
+      <p class="muted">Tap your name. If your page has a lock 🔒, you'll be asked for your PIN.</p>
+      <div class="age-options" style="margin:16px 0">
+        ${PROFILES.map(p=>`
+          <button type="button" class="age-btn" onclick="attemptOpenProfile('${p.id}')">
+            <span class="ab-emoji">${AGE_GROUPS[p.ageGroup].emoji}</span>
+            <span><span class="ab-label">${esc(p.name||'(no name)')}${p.pinHash?' 🔒':''}</span><br><span class="ab-range">${esc(AGE_GROUPS[p.ageGroup].label)}</span></span>
+          </button>`).join('')}
+      </div>
+      <button class="btn" style="width:100%" onclick="openProfileForm(null)">Add a new child</button>
+      ${getActiveProfile()?`<button class="btn secondary" style="width:100%;margin-top:8px" onclick="closeProfileModal()">Close</button>`:''}
+      <p class="muted" style="margin-top:12px">Renaming, removing a child, or resetting a forgotten PIN is done by a teacher in the Class tab.</p>`;
+  } else if(profileModalMode==='pin'){
+    const p = PROFILES.find(x=>x.id===pinTargetId);
+    inner.innerHTML = `
+      <h2>🔒 Enter ${esc(p?p.name:'your')}'s PIN</h2>
+      <p class="muted">Ask a teacher if you forget your PIN.</p>
+      ${childPinError?`<div class="banner bad">${esc(childPinError)}</div>`:''}
+      <input class="pin-input" type="password" inputmode="numeric" readonly value="${'•'.repeat(childPinBuffer.length)}" aria-label="PIN">
+      <div class="pinpad">
+        ${[1,2,3,4,5,6,7,8,9].map(n=>`<button type="button" onclick="childPinPress('${n}')">${n}</button>`).join('')}
+        <button type="button" onclick="childPinClear()">Clear</button>
+        <button type="button" onclick="childPinPress('0')">0</button>
+        <button type="button" onclick="pinBackToPicker()">Back</button>
+      </div>`;
+  } else {
+    const existing = editingProfileId ? PROFILES.find(p=>p.id===editingProfileId) : null;
+    inner.innerHTML = `
+      <h2>${existing ? 'Edit profile' : 'Welcome, Bible Explorer! 🐑'}</h2>
+      <p class="muted">Tell us your name and pick your age group.</p>
+      <label class="field">What's your name?</label>
+      <input class="input" id="profileNameInput" placeholder="Type your first name" autocomplete="off" value="${existing?esc(existing.name):''}">
+      <label class="field">Pick your age group</label>
+      <div class="age-options" id="ageOptions"></div>
+      <label class="field">${existing ? 'Change PIN (optional)' : 'Set a 4-digit PIN (optional)'}</label>
+      <input class="input" id="profilePinInput" type="password" inputmode="numeric" maxlength="4" placeholder="4 digits, e.g. 1234" autocomplete="off">
+      <input class="input" id="profilePinConfirm" type="password" inputmode="numeric" maxlength="4" placeholder="Type it again" autocomplete="off" style="margin-top:6px">
+      <p class="muted" style="margin-top:4px">${existing ? 'Leave both boxes blank to keep the current PIN unchanged.' : 'A PIN stops other children from opening this page. Leave blank to skip it — a helper can always type it in for a younger child.'}</p>
+      <button class="btn" style="width:100%;margin-top:6px" onclick="saveProfileAndStart()">${existing ? 'Save changes' : 'Start my adventure'}</button>
+      ${PROFILES.length>0 ? `<button class="btn secondary" style="width:100%;margin-top:8px" onclick="backToPicker()">Back</button>` : ''}`;
+    renderAgeOptions();
+  }
+}
+async function removeProfile(id){
+  const p = PROFILES.find(x=>x.id===id);
+  if(!confirm('Remove '+((p&&p.name)||'this profile')+' and their progress? This cannot be undone.')) return;
+  try{
+    if(dbReady){ await deleteDoc(doc(db,'profiles',id)); await deleteDoc(doc(db,'progress',id)).catch(()=>{}); }
+  }catch(e){ alert('Could not remove this profile online. Check the connection and try again.'); return; }
+  try{ localStorage.removeItem('bibleAdventureProgress_'+id); }catch(e){}
+  if(activeProfileId===id){ activeProfileId=null; try{localStorage.removeItem('bibleAdventureActiveId');}catch(e){} PROGRESS=normalizeProgress({}); renderProfileChip(); renderPointsPill(); }
+  renderProfileModal(); refreshCurrentScreen();
+}
+async function resetChildPin(id){
+  const p = PROFILES.find(x=>x.id===id); if(!p) return;
+  const wantsNew = confirm('Set a new PIN for '+(p.name||'this child')+'? Click Cancel instead to remove their PIN (no PIN required to open their page).');
+  try{
+    if(wantsNew){
+      const newPin = prompt('Enter a new 4-digit PIN for '+(p.name||'this child')+':');
+      if(newPin===null) return;
+      if(!/^\d{4}$/.test(newPin)){ alert('The PIN must be exactly 4 digits.'); return; }
+      await updateDoc(doc(db,'profiles',id), {pinHash: await sha256(newPin)});
+      alert('PIN updated.');
+    } else {
+      await updateDoc(doc(db,'profiles',id), {pinHash: null});
+      alert('PIN removed — '+(p.name||'this child')+' can open their page without a PIN now.');
+    }
+  }catch(e){ alert('Could not update the PIN online. Check the connection and try again.'); }
+}
+async function chooseProfile(id){
+  activeProfileId = id;
+  try{ localStorage.setItem('bibleAdventureActiveId', id); }catch(e){}
+  await loadProgressForActiveProfile();
+  closeProfileModal(); renderProfileChip(); renderPointsPill(); refreshCurrentScreen();
+}
+async function saveProfileAndStart(){
+  const name = document.getElementById('profileNameInput').value.trim().slice(0,30);
+  if(!name){ alert('Please enter a name.'); return; }
+  if(!dbReady){ alert('Firebase is not configured yet — see SETUP.md.'); return; }
+  const pin1 = (document.getElementById('profilePinInput').value||'').trim();
+  const pin2 = (document.getElementById('profilePinConfirm').value||'').trim();
+  let pinHashValue; // undefined = leave unchanged (edit only); null = no PIN; string = new hash
+  if(pin1 || pin2){
+    if(!/^\d{4}$/.test(pin1)){ alert('The PIN must be exactly 4 digits.'); return; }
+    if(pin1!==pin2){ alert('The two PINs do not match.'); return; }
+    pinHashValue = await sha256(pin1);
+  } else if(!editingProfileId){
+    pinHashValue = null;
+  }
+  try{
+    if(editingProfileId){
+      const patch = {name, ageGroup: pendingAge};
+      if(pinHashValue !== undefined) patch.pinHash = pinHashValue;
+      await updateDoc(doc(db,'profiles',editingProfileId), patch);
+    } else {
+      const ref = await addDoc(collection(db,'profiles'), {name, ageGroup: pendingAge, pinHash: pinHashValue, createdAt: serverTimestamp()});
+      activeProfileId = ref.id;
+      try{ localStorage.setItem('bibleAdventureActiveId', ref.id); }catch(e){}
+      PROGRESS = normalizeProgress({});
+      await persistProgress();
+    }
+  }catch(e){ alert('Could not save this profile online. Check the connection and try again.'); return; }
+  closeProfileModal(); renderProfileChip(); renderPointsPill(); refreshCurrentScreen();
+}
+function renderProfileChip(){
+  const p = getActiveProfile();
+  const g = AGE_GROUPS[ageKey()];
+  const chipText = document.getElementById('profileChipText'); if(!chipText) return;
+  chipText.textContent = p ? ((p.name||'(no name)') + ' · ' + g.label) : "Who's playing?";
+  document.querySelector('#profileChip .pc-emoji').textContent = g.emoji;
+  document.getElementById('topbarSub').textContent = 'Weekly interactive Bible learning · ' + g.range;
+}
+function refreshCurrentScreen(){
+  const active = document.querySelector('.screen.active');
+  if(!active) return;
+  go(active.id, document.querySelector('#mainNav button[data-screen="'+active.id+'"]'));
+}
+
+/* ===================== NAV ===================== */
+function go(id, btn){
+  renderToken++;
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('#mainNav button').forEach(b=>b.classList.remove('active'));
+  const target = btn || document.querySelector('#mainNav button[data-screen="'+id+'"]');
+  if(target) target.classList.add('active');
+  if(id==='home') renderHome();
+  if(id==='lesson') renderLessonScreen();
+  if(id==='activity') renderActivityScreen();
+  if(id==='badges') renderBadges();
+  if(id==='teacher') renderTeacherGate();
+  window.scrollTo({top:0, behavior:'instant'});
+}
+function openLesson(id){ currentLessonId=id; go('lesson'); }
+function openLessonActivities(id){ currentLessonId=id; currentActivity='quiz'; go('activity'); }
+
+function bannerFor(l){
+  const img = lessonImage(l);
+  return `<div class="lesson-banner ${img?'':'no-image'}">
+    ${img?`<img class="banner-img" src="${img}" alt="Illustration for ${esc(l.topic)}">`:''}
+    <div class="scrim"></div>
+    <div class="banner-text">
+      <span class="tag">${esc(l.theme)}</span><span class="tag">${esc(ageLabel())}</span>
+      <h2>${esc(l.topic)}</h2>
+      <p>${esc(l.story.title)} · ${esc(l.story.reference)}</p>
+    </div>
+  </div>`;
+}
+
+/* ===================== HOME ===================== */
+function renderHome(){
+  const el = document.getElementById('home');
+  if(!STATE.lessons.length){ el.innerHTML = `<div class="banner warn">No lessons have been published yet. Sign in as a teacher to add the first one.</div>`; return; }
+  const weeksDone = STATE.lessons.filter(l => PROGRESS.completed[l.id] && Object.keys(PROGRESS.completed[l.id]).length>=3).length;
+  const l0 = currentLessonId ? getLesson(currentLessonId) : pickCurrentLesson();
+  const activeP = getActiveProfile();
+  const greetName = (activeP && activeP.name) ? activeP.name : 'Bible Explorer';
+  const img = lessonImage(l0);
+  el.innerHTML = `
+    <div class="hero">
+      <div>
+        <div class="tag">This week's adventure</div>
+        <p class="muted" style="margin:6px 0 2px">Welcome back, ${esc(greetName)} (${esc(ageLabel())})</p>
+        <div class="hero-title">${esc(l0.topic)}</div>
+        <div class="hero-sub">${esc(l0.reference)} · ${esc(l0.story.title)}</div>
+        <p>${esc(l0.story.summary.slice(0,140))}…</p>
+        <button class="btn" onclick="openLesson('${l0.id}')">Start this week</button>
+      </div>
+      ${img ? `<img class="hero-thumb" src="${img}" alt="Illustration for ${esc(l0.topic)}">` : `<div class="hero-emoji">🐑📖⭐</div>`}
+    </div>
+    <div class="grid grid4">
+      <div class="card"><div class="icon">⭐</div><div class="stat">${PROGRESS.points||0}</div><div class="muted">Adventure points</div></div>
+      <div class="card"><div class="icon">🏅</div><div class="stat">${countBadges()}</div><div class="muted">Badges earned</div></div>
+      <div class="card"><div class="icon">📖</div><div class="stat">${weeksDone}</div><div class="muted">Weeks completed</div></div>
+      <div class="card"><div class="icon">🎮</div><div class="stat">${STATE.lessons.length}</div><div class="muted">Adventures available</div></div>
+    </div>
+    <h2 style="margin-top:22px">All Bible adventures</h2>
+    <div class="grid grid3">
+      ${STATE.lessons.map(l => { const thumb=lessonImage(l); return `
+        <button class="week-card" onclick="openLesson('${l.id}')">
+          ${thumb?`<img class="week-thumb" src="${thumb}" alt="">`:''}
+          <div class="wk-tag">${esc(l.date)}</div>
+          <h3 style="margin-top:6px">${esc(l.topic)}</h3>
+          <p class="muted" style="margin:0 0 8px">${esc(l.story.title)} — ${esc(l.reference)}</p>
+          <div class="progress"><div style="width:${progressPct(l.id)}%"></div></div>
+          <div class="muted">${progressPct(l.id)}% complete</div>
+        </button>`;}).join('')}
+    </div>`;
+  renderPointsPill();
+}
+function progressPct(lessonId){
+  const done = PROGRESS.completed[lessonId] || {};
+  const n = Object.keys(done).filter(k=>['quiz','wordsearch','unscramble','memory'].includes(k)).length;
+  return Math.round(Math.min(n,4)/4*100);
+}
+
+/* ===================== LESSON SCREEN ===================== */
+function renderLessonScreen(){
+  const el = document.getElementById('lesson');
+  if(!STATE.lessons.length){ el.innerHTML = `<div class="banner warn">No lessons yet.</div>`; return; }
+  if(!currentLessonId) currentLessonId = pickCurrentLesson().id;
+  const l = getLesson(currentLessonId);
+  el.innerHTML = `
+    <h1>This week's lesson</h1>
+    <div class="toolbar">${STATE.lessons.map(x=>`<button class="btn ${x.id===l.id?'':'secondary'}" onclick="openLesson('${x.id}')">${esc(x.date)}</button>`).join('')}</div>
+    ${bannerFor(l)}
+    <div class="lesson-card">
+      <p><strong>Bible reading:</strong> ${(l.bibleReading||[]).map(esc).join(' · ')}</p>
+      <div class="grid grid2">
+        <div class="smallcard"><h3>📖 Bible story: ${esc(l.story.title)}</h3><p class="muted">${esc(l.story.reference)}</p><p>${esc(l.story.summary)}</p></div>
+        <div class="smallcard"><h3>💡 What can we learn?</h3><ol>${(l.lessonPoints||[]).map(p=>`<li>${esc(p)}</li>`).join('')}</ol></div>
+      </div>
+      <div class="grid grid2">
+        <div class="smallcard"><h3>🙏 Confession</h3><p>${(l.confession||[]).map(esc).join('<br>')}</p></div>
+        <div class="smallcard"><h3>📜 Memory verse</h3><p style="font-size:17px"><strong>“${esc(l.memoryVerse.text)}”</strong></p><p class="muted">${esc(l.memoryVerse.reference)}</p></div>
+      </div>
+      <button class="btn" style="margin-top:14px" onclick="openLessonActivities('${l.id}')">Play this week's activities</button>
+    </div>`;
+}
+
+/* ===================== ACTIVITY SCREEN ===================== */
+function renderActivityScreen(){
+  const el = document.getElementById('activity');
+  if(!STATE.lessons.length){ el.innerHTML = `<div class="banner warn">No lessons yet.</div>`; return; }
+  if(!currentLessonId) currentLessonId = pickCurrentLesson().id;
+  const l = getLesson(currentLessonId);
+  const types = [['quiz','🧠 Bible quiz'],['wordsearch','🔤 Word search'],['unscramble','🔀 Unscramble'],['memory','📜 Memory verse'],['whoami','🔎 Who am I?']];
+  if(l.chooseBetter) types.push(['choose','💎 Choose the treasure']);
+  if(ageKey()==='3-5') types.splice(1,0,['count','🔢 Counting fun']);
+  if(ageKey()==='10-12') types.push(['deeper','🧭 Deeper dive']);
+  if(!types.some(t=>t[0]===currentActivity)) currentActivity='quiz';
+  const img = lessonImage(l);
+  el.innerHTML = `
+    <h1>Activity centre — ${esc(l.topic)} <span class="tag" style="vertical-align:middle">${AGE_GROUPS[ageKey()].emoji} ${esc(AGE_GROUPS[ageKey()].label)}</span></h1>
+    <div class="activity-nav">${types.map(([k,label])=>`<button class="${currentActivity===k?'active':''}" onclick="setActivity('${k}')">${label}</button>`).join('')}</div>
+    <div class="activity-wrap">
+      ${img?`<div class="activity-bg" style="background-image:url('${img}')"></div>`:''}
+      <div id="activityBox" class="card activity-box"></div>
+    </div>`;
+  renderActivityContent();
+}
+function setActivity(type){ currentActivity=type; renderToken++; renderActivityScreen(); }
+function renderActivityContent(){
+  const l = getLesson(currentLessonId); const box = document.getElementById('activityBox');
+  if(currentActivity==='quiz') return renderQuiz(l, box);
+  if(currentActivity==='wordsearch') return renderWordSearch(l, box);
+  if(currentActivity==='unscramble') return renderUnscramble(l, box);
+  if(currentActivity==='memory') return renderMemoryVerse(l, box);
+  if(currentActivity==='whoami') return renderWhoAmI(l, box);
+  if(currentActivity==='choose') return renderChooseBetter(l, box);
+  if(currentActivity==='count') return renderCounting(l, box);
+  if(currentActivity==='deeper') return renderDeeperDive(l, box);
+}
+function bankedLine(lessonId, type, max){
+  const banked = (PROGRESS.scores[lessonId+':'+type]||{score:0}).score;
+  return `Adventure points banked: ${banked} / ${max}${banked>=max?' — maxed out! 🌟':''}`;
+}
+function againBar(onReplay){
+  return `<div class="toolbar"><button class="btn" onclick="${onReplay}">Play again</button>
+    <button class="btn secondary" onclick="go('activity')">Choose another activity</button></div>`;
+}
+
+/* ---- Quiz ---- */
+let quizIndex=0, quizScore=0;
+function renderQuiz(l, box, resetIdx){
+  if(resetIdx!==false){ quizIndex=0; quizScore=0; }
+  if(!l.quiz || !l.quiz.length){ box.innerHTML='<p>No quiz has been added for this lesson yet.</p>'; return; }
+  if(quizIndex >= l.quiz.length){
+    const maxScore = l.quiz.length*10;
+    recordActivityScore(l.id,'quiz', quizScore*10, maxScore, true);
+    box.innerHTML = `<h2>🎉 Quiz complete</h2><p>You scored <strong>${quizScore} / ${l.quiz.length}</strong> this time.</p>
+      <p class="muted">${bankedLine(l.id,'quiz',maxScore)}</p>
+      ${againBar(`renderQuiz(getLesson('${l.id}'),document.getElementById('activityBox'),true)`)}`;
+    return;
+  }
+  const q = l.quiz[quizIndex]; const correctText = q.options[q.correct];
+  let shown = q.options.slice();
+  if(ageKey()==='3-5'){ const wrongs=q.options.filter((o,i)=>i!==q.correct); shown=[correctText, wrongs[Math.floor(Math.random()*wrongs.length)]]; }
+  shown = shown.sort(()=>Math.random()-0.5);
+  box.innerHTML = `<h2>🧠 Bible quiz — question ${quizIndex+1} of ${l.quiz.length}</h2>
+    <div class="question">${esc(q.q)}</div><div class="options" id="quizOptions"></div>
+    <div id="feedback" class="feedback" role="status"></div>`;
+  const wrap = document.getElementById('quizOptions');
+  shown.forEach(o=>{ const d=document.createElement('button'); d.type='button'; d.className='option'; d.textContent=o;
+    d.onclick=()=>answerQuiz(d,o,correctText); wrap.appendChild(d); });
+}
+function answerQuiz(el, chosenText, correctText){
+  const l = getLesson(currentLessonId); const token = renderToken;
+  document.querySelectorAll('#activityBox .option').forEach(o=>{
+    if(o.textContent===correctText) o.classList.add('correct');
+    if(o===el && chosenText!==correctText) o.classList.add('wrong');
+    o.onclick=null;
+  });
+  const fb = document.getElementById('feedback');
+  if(chosenText===correctText){ fb.textContent='🎉 Correct!'; fb.style.color='#1E8A4C'; quizScore++; }
+  else { fb.textContent='Not quite — the highlighted answer is correct.'; fb.style.color='#D14343'; }
+  setTimeout(()=>{ if(token!==renderToken) return; quizIndex++; renderQuiz(l, document.getElementById('activityBox'), false); }, 1200);
+}
+
+/* ---- Word search ---- */
+let wsWords=[], wsFound=new Set(), wsSelecting=null, wsWordPoolLen=0;
+function buildWordSearch(words, size, dirs){
+  const grid = Array.from({length:size},()=>Array(size).fill(''));
+  const placed = [];
+  words.forEach(word=>{
+    let ok=false, tries=0;
+    while(!ok && tries<300){
+      tries++;
+      const dir = dirs[Math.floor(Math.random()*dirs.length)];
+      const rLo = dir[0]<0?word.length-1:0, rHi = dir[0]>0?size-word.length:size-1;
+      const cLo = dir[1]<0?word.length-1:0, cHi = dir[1]>0?size-word.length:size-1;
+      if(rHi<rLo||cHi<cLo) continue;
+      const r0 = rLo+Math.floor(Math.random()*(rHi-rLo+1)), c0 = cLo+Math.floor(Math.random()*(cHi-cLo+1));
+      let fits=true;
+      for(let i=0;i<word.length;i++){ const r=r0+dir[0]*i,c=c0+dir[1]*i;
+        if(r<0||c<0||r>=size||c>=size){fits=false;break;} if(grid[r][c]&&grid[r][c]!==word[i]){fits=false;break;} }
+      if(fits){ for(let i=0;i<word.length;i++) grid[r0+dir[0]*i][c0+dir[1]*i]=word[i]; placed.push({word,r0,c0,dir}); ok=true; }
+    }
+  });
+  const letters='ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  for(let r=0;r<size;r++) for(let c=0;c<size;c++) if(!grid[r][c]) grid[r][c]=letters[Math.floor(Math.random()*26)];
+  return {grid, placed};
+}
+function renderWordSearch(l, box){
+  const age = ageKey(); let size, wordPool, dirs, cell;
+  if(age==='3-5'){ size=6; wordPool=l.vocabulary.filter(w=>w.length<=5).slice(0,3); dirs=[[0,1],[1,0]]; cell=42; }
+  else if(age==='10-12'){ size=13; wordPool=l.vocabulary.filter(w=>w.length<=13); dirs=[[0,1],[1,0],[1,1],[0,-1],[-1,0],[-1,-1]]; cell=30; }
+  else { size=10; wordPool=l.vocabulary.filter(w=>w.length<=10); dirs=[[0,1],[1,0],[1,1]]; cell=34; }
+  if(!wordPool.length) wordPool = l.vocabulary.slice(0,3).map(w=>w.slice(0,size));
+  const built = buildWordSearch(wordPool, size, dirs);
+  wsWords = built.placed; const listed = built.placed.map(p=>p.word); wsWordPoolLen = listed.length;
+  wsFound = new Set(); wsSelecting=null;
+  box.innerHTML = `<h2>🔤 Word search</h2><p class="muted">Tap the first letter of a word, then tap its last letter.</p>
+    <div class="grid-scroll"><div class="word-grid" id="wsGridEl" style="grid-template-columns:repeat(${size},${cell}px)"></div></div>
+    <div class="wordlist" id="wsWordlist">${listed.map(w=>`<span id="wsw-${w}">${esc(w)}</span>`).join('')}</div>
+    <div id="wsFeedback" class="feedback" role="status"></div><div id="wsDone"></div>`;
+  const gridEl = document.getElementById('wsGridEl');
+  for(let r=0;r<size;r++) for(let c=0;c<size;c++){
+    const d=document.createElement('button'); d.type='button'; d.className='letter'; d.style.width=cell+'px'; d.style.height=cell+'px';
+    d.textContent=built.grid[r][c]; d.dataset.r=r; d.dataset.c=c; d.onclick=()=>wsClick(r,c); gridEl.appendChild(d);
+  }
+}
+function wsClick(r,c){
+  if(!wsSelecting){ wsSelecting={r,c}; markSel(r,c,true); return; }
+  const start = wsSelecting; wsSelecting=null; markSel(start.r,start.c,false);
+  let matched=null;
+  wsWords.forEach(p=>{
+    if(wsFound.has(p.word)) return;
+    const endR=p.r0+p.dir[0]*(p.word.length-1), endC=p.c0+p.dir[1]*(p.word.length-1);
+    if((start.r===p.r0&&start.c===p.c0&&r===endR&&c===endC)||(r===p.r0&&c===p.c0&&start.r===endR&&start.c===endC)) matched=p;
+  });
+  const fb=document.getElementById('wsFeedback');
+  if(!matched){ fb.textContent='Not a word yet — try another pair of letters.'; fb.style.color='#6B6178'; return; }
+  wsFound.add(matched.word);
+  for(let i=0;i<matched.word.length;i++){ const cellEl=document.querySelector(`.letter[data-r="${matched.r0+matched.dir[0]*i}"][data-c="${matched.c0+matched.dir[1]*i}"]`); if(cellEl) cellEl.classList.add('found'); }
+  const chip=document.getElementById('wsw-'+matched.word); if(chip) chip.classList.add('done');
+  const maxScore=wsWordPoolLen*5+15, allFound=wsFound.size===wsWordPoolLen;
+  recordActivityScore(currentLessonId,'wordsearch', wsFound.size*5+(allFound?15:0), maxScore, allFound);
+  if(allFound){ fb.textContent='🎉 All words found!'; fb.style.color='#1E8A4C';
+    document.getElementById('wsDone').innerHTML=`<p class="muted">${bankedLine(currentLessonId,'wordsearch',maxScore)}</p>${againBar(`renderWordSearch(getLesson('${currentLessonId}'),document.getElementById('activityBox'))`)}`;
+  } else { fb.textContent='Nice find! Keep going.'; fb.style.color='#1E8A4C'; }
+}
+function markSel(r,c,on){ const cell=document.querySelector(`.letter[data-r="${r}"][data-c="${c}"]`); if(cell) cell.classList.toggle('sel',on); }
+
+/* ---- Unscramble ---- */
+let uWordIndex=0, uWords=[];
+function shuffleWord(w){ let arr=w.split(''),tries=0; do{ arr.sort(()=>Math.random()-0.5); tries++; }while(arr.join('')===w && tries<10); return arr.join(' '); }
+function renderUnscramble(l, box){
+  const age=ageKey();
+  if(age==='3-5'){ uWords=l.vocabulary.filter(w=>w.length<=5).slice(0,3); if(!uWords.length) uWords=l.vocabulary.slice(0,3); }
+  else if(age==='10-12'){ uWords=l.vocabulary.slice(); } else { uWords=l.vocabulary.slice(0,6); }
+  uWordIndex=0; showUnscrambleWord(box);
+}
+function showUnscrambleWord(box){
+  if(uWordIndex>=uWords.length){
+    const maxScore=uWords.length*10;
+    recordActivityScore(currentLessonId,'unscramble', maxScore, maxScore, true);
+    box.innerHTML=`<h2>🎉 Unscramble complete</h2><p>You unscrambled all the Bible words for this week.</p>
+      <p class="muted">${bankedLine(currentLessonId,'unscramble',maxScore)}</p>${againBar(`renderUnscramble(getLesson('${currentLessonId}'),document.getElementById('activityBox'))`)}`;
+    return;
+  }
+  const word=uWords[uWordIndex];
+  const hint = ageKey()==='3-5' ? `<p class="muted">Hint: it starts with “${esc(word[0])}”</p>` : '';
+  box.innerHTML=`<h2>🔀 Unscramble the Bible word</h2><p class="muted">Word ${uWordIndex+1} of ${uWords.length}</p>
+    <div class="question" style="letter-spacing:4px">${esc(shuffleWord(word))}</div>${hint}
+    <input id="uAns" class="input" placeholder="Type your answer" style="max-width:300px" autocomplete="off" onkeydown="if(event.key==='Enter')checkUnscramble('${word}')">
+    <div class="toolbar"><button class="btn" onclick="checkUnscramble('${word}')">Check answer</button></div>
+    <div id="uFeedback" class="feedback" role="status"></div>`;
+  document.getElementById('uAns').focus();
+}
+function checkUnscramble(word){
+  const token=renderToken;
+  const v=(document.getElementById('uAns').value||'').trim().toUpperCase();
+  const fb=document.getElementById('uFeedback');
+  if(v===word){ fb.textContent='🎉 Correct!'; fb.style.color='#1E8A4C'; uWordIndex++;
+    setTimeout(()=>{ if(token!==renderToken) return; showUnscrambleWord(document.getElementById('activityBox')); }, 900);
+  } else { fb.textContent='Not quite — try again.'; fb.style.color='#D14343'; }
+}
+
+/* ---- Memory verse ---- */
+let mvOrder=[], mvAnswer=[];
+function renderMemoryVerse(l, box){
+  const age=ageKey();
+  if(age==='3-5') return renderMemoryVerseFillBlank(l, box);
+  if(age==='10-12') return renderMemoryVerseTyped(l, box);
+  const words=l.memoryVerse.text.replace(/[.,!]/g,'').split(' ').filter(Boolean);
+  mvOrder=words.slice().sort(()=>Math.random()-0.5); mvAnswer=[];
+  box.innerHTML=`<h2>📜 Put the verse in order</h2><p class="muted">${esc(l.memoryVerse.reference)}</p>
+    <div class="verse-answer" id="mvAnswer"></div><div class="verse-bank" id="mvBank"></div>
+    <div class="toolbar"><button class="btn secondary" onclick="mvReset()">Start over</button></div>
+    <div id="mvFeedback" class="feedback" role="status"></div><div id="mvDone"></div>`;
+  renderMvBank(); renderMvAnswer();
+}
+function renderMvBank(){ const wrap=document.getElementById('mvBank'); wrap.innerHTML='';
+  mvOrder.forEach((w,i)=>{ const s=document.createElement('button'); s.type='button'; s.className='vchip'; s.textContent=w; s.onclick=()=>mvPick(i); wrap.appendChild(s); }); }
+function renderMvAnswer(){ const wrap=document.getElementById('mvAnswer'); wrap.innerHTML='';
+  mvAnswer.forEach((w,i)=>{ const s=document.createElement('button'); s.type='button'; s.className='vchip'; s.textContent=w; s.onclick=()=>mvUnpick(i); wrap.appendChild(s); }); }
+function mvPick(i){
+  mvAnswer.push(mvOrder[i]); mvOrder.splice(i,1); renderMvBank(); renderMvAnswer();
+  const l=getLesson(currentLessonId);
+  if(mvOrder.length===0){
+    const built=mvAnswer.join(' '); const target=l.memoryVerse.text.replace(/[.,!]/g,'');
+    const fb=document.getElementById('mvFeedback');
+    if(built.toLowerCase()===target.toLowerCase()){
+      recordActivityScore(l.id,'memory', 20, 20, true);
+      fb.textContent='⭐ Amazing! You remembered the verse. '+bankedLine(l.id,'memory',20); fb.style.color='#1E8A4C';
+      document.getElementById('mvDone').innerHTML=againBar('mvReset()');
+    } else { fb.textContent='Almost — tap “Start over” and try the order again.'; fb.style.color='#D14343'; }
+  }
+}
+function mvUnpick(i){ mvOrder.push(mvAnswer[i]); mvAnswer.splice(i,1); renderMvBank(); renderMvAnswer();
+  document.getElementById('mvFeedback').textContent=''; document.getElementById('mvDone').innerHTML=''; }
+function mvReset(){ renderMemoryVerse(getLesson(currentLessonId), document.getElementById('activityBox')); }
+function renderMemoryVerseFillBlank(l, box){
+  const words=l.memoryVerse.text.replace(/[.,!]/g,'').split(' ').filter(Boolean);
+  const blankIdx=Math.floor(Math.random()*words.length); const correctWord=words[blankIdx];
+  const display=words.map((w,i)=>i===blankIdx?'_____':w).join(' ');
+  let choices=[correctWord];
+  const others='the Lord is my shepherd always with faith love God Jesus follow'.split(' ').filter(w=>w.toLowerCase()!==correctWord.toLowerCase());
+  while(choices.length<3){ const c=others[Math.floor(Math.random()*others.length)]; if(!choices.includes(c)) choices.push(c); }
+  choices=choices.sort(()=>Math.random()-0.5);
+  box.innerHTML=`<h2>📜 Fill in the missing word</h2><p class="muted">${esc(l.memoryVerse.reference)}</p>
+    <div class="question" style="font-size:17px">“${esc(display)}”</div><div class="options" id="mvfbOptions"></div>
+    <div id="mvfbFeedback" class="feedback" role="status"></div><div id="mvfbDone"></div>`;
+  const wrap=document.getElementById('mvfbOptions');
+  choices.forEach(c=>{ const d=document.createElement('button'); d.type='button'; d.className='option'; d.textContent=c;
+    d.onclick=()=>{
+      document.querySelectorAll('#mvfbOptions .option').forEach(o=>{ o.onclick=null; if(o.textContent.toLowerCase()===correctWord.toLowerCase()) o.classList.add('correct'); });
+      const fb=document.getElementById('mvfbFeedback'); const isCorrect=c.toLowerCase()===correctWord.toLowerCase();
+      recordActivityScore(l.id,'memory', isCorrect?20:0, 20, true);
+      if(isCorrect){ fb.textContent='⭐ Well done! '+bankedLine(l.id,'memory',20); fb.style.color='#1E8A4C'; }
+      else { d.classList.add('wrong'); fb.textContent='Almost — the missing word is “'+correctWord+'”.'; fb.style.color='#D14343'; }
+      document.getElementById('mvfbDone').innerHTML=againBar(`renderMemoryVerseFillBlank(getLesson('${l.id}'),document.getElementById('activityBox'))`);
+    }; wrap.appendChild(d); });
+}
+function renderMemoryVerseTyped(l, box){
+  box.innerHTML=`<h2>📜 Type the verse from memory</h2><p class="muted">${esc(l.memoryVerse.reference)}</p>
+    <textarea id="mvTyped" class="input reflect-box" placeholder="Type the full memory verse…"></textarea>
+    <div class="toolbar"><button class="btn" onclick="checkMvTyped()">Check my answer</button></div>
+    <div id="mvtFeedback" class="feedback" role="status"></div><div id="mvtDone"></div>`;
+}
+function checkMvTyped(){
+  const l=getLesson(currentLessonId);
+  const norm=s=>s.toLowerCase().replace(/[.,!"“”]/g,'').replace(/\s+/g,' ').trim();
+  const isCorrect=norm(document.getElementById('mvTyped').value)===norm(l.memoryVerse.text);
+  const fb=document.getElementById('mvtFeedback');
+  recordActivityScore(l.id,'memory', isCorrect?20:0, 20, true);
+  if(isCorrect){ fb.textContent='⭐ Word for word! '+bankedLine(l.id,'memory',20); fb.style.color='#1E8A4C'; }
+  else { fb.textContent='Not quite exact — the verse is: “'+l.memoryVerse.text+'”. Try again.'; fb.style.color='#D14343'; }
+  document.getElementById('mvtDone').innerHTML=againBar(`renderMemoryVerseTyped(getLesson('${l.id}'),document.getElementById('activityBox'))`);
+}
+
+/* ---- Who am I? ---- */
+let waiQueue=[], waiIndex=0, waiScore=0;
+function renderWhoAmI(l, box, resetQueue){
+  if(resetQueue!==false){
+    if(!l.characters || !l.characters.length){ box.innerHTML='<p>No characters have been added for this lesson yet.</p>'; return; }
+    waiQueue=l.characters.slice().sort(()=>Math.random()-0.5); waiIndex=0; waiScore=0;
+  }
+  if(waiIndex>=waiQueue.length){
+    const maxScore=waiQueue.length*10;
+    recordActivityScore(l.id,'whoami', waiScore*10, maxScore, true);
+    box.innerHTML=`<h2>🎉 Who am I complete</h2><p>You matched <strong>${waiScore} / ${waiQueue.length}</strong> characters correctly.</p>
+      <p class="muted">${bankedLine(l.id,'whoami',maxScore)}</p>${againBar(`renderWhoAmI(getLesson('${l.id}'),document.getElementById('activityBox'),true)`)}`;
+    return;
+  }
+  const allNames=[]; STATE.lessons.forEach(x=>(x.characters||[]).forEach(c=>allNames.push(c.name)));
+  const char=waiQueue[waiIndex];
+  const distractors=allNames.filter(n=>n!==char.name).sort(()=>Math.random()-0.5).slice(0, ageKey()==='3-5'?1:3);
+  const options=[char.name, ...distractors].sort(()=>Math.random()-0.5);
+  const clueText = ageKey()==='3-5' ? char.clue.split('.')[0]+'.' : char.clue;
+  box.innerHTML=`<h2>🔎 Who am I? — question ${waiIndex+1} of ${waiQueue.length}</h2>
+    <div class="character-clue">${esc(clueText)}</div><div class="options" id="waiOptions"></div>
+    <div id="waiFeedback" class="feedback" role="status"></div>`;
+  const wrap=document.getElementById('waiOptions');
+  options.forEach(o=>{ const d=document.createElement('button'); d.type='button'; d.className='option'; d.textContent=o;
+    d.onclick=()=>answerWhoAmI(d,o,char.name); wrap.appendChild(d); });
+}
+function answerWhoAmI(el, chosen, correctName){
+  const token=renderToken; const fb=document.getElementById('waiFeedback');
+  document.querySelectorAll('#activityBox .option').forEach(o=>o.onclick=null);
+  if(chosen===correctName){ el.classList.add('correct'); fb.textContent='🎉 Correct! You discovered '+correctName+'.'; fb.style.color='#1E8A4C';
+    waiScore++; PROGRESS.whoAmICorrect=(PROGRESS.whoAmICorrect||0)+1; persistProgress();
+  } else { el.classList.add('wrong'); fb.textContent='Not quite — the answer was '+correctName+'.'; fb.style.color='#D14343'; }
+  waiIndex++;
+  setTimeout(()=>{ if(token!==renderToken) return; renderWhoAmI(getLesson(currentLessonId), document.getElementById('activityBox'), false); }, 1400);
+}
+
+/* ---- Choose the better treasure ---- */
+let ctScore=0;
+function renderChooseBetter(l, box){
+  if(!l.chooseBetter){ box.innerHTML='<p>Not available for this lesson.</p>'; return; }
+  ctScore=0;
+  box.innerHTML=`<h2>💎 Choose the better treasure</h2><p class="muted">Tap the wiser choice.</p>
+    ${l.chooseBetter.map((pair,i)=>`<div class="treasure-row">
+      <button type="button" class="treasure-choice" id="tb-bad-${i}" onclick="chooseTreasure(${i},false)">${esc(pair.bad)}</button>
+      <span>or</span>
+      <button type="button" class="treasure-choice" id="tb-good-${i}" onclick="chooseTreasure(${i},true)">${esc(pair.good)}</button>
+    </div>`).join('')}
+    <div id="ctFeedback" class="feedback" role="status"></div><div id="ctDone"></div>`;
+}
+function chooseTreasure(i, isGood){
+  const badEl=document.getElementById('tb-bad-'+i), goodEl=document.getElementById('tb-good-'+i);
+  badEl.onclick=null; goodEl.onclick=null;
+  const fb=document.getElementById('ctFeedback');
+  if(isGood){ goodEl.classList.add('correct'); ctScore++; fb.textContent='🎉 That is the wiser treasure.'; fb.style.color='#1E8A4C'; }
+  else { badEl.classList.add('wrong'); goodEl.classList.add('correct'); fb.textContent='Jesus is always the better treasure. 💛'; fb.style.color='#D14343'; }
+  const allAnswered=[...document.querySelectorAll('.treasure-choice')].every(el=>el.onclick===null);
+  if(allAnswered){
+    const l=getLesson(currentLessonId); const maxScore=l.chooseBetter.length*5;
+    recordActivityScore(l.id,'choose', ctScore*5, maxScore, true);
+    document.getElementById('ctDone').innerHTML=`<p class="muted">You picked ${ctScore} / ${l.chooseBetter.length} wiser treasures. ${bankedLine(l.id,'choose',maxScore)}</p>${againBar(`renderChooseBetter(getLesson('${l.id}'),document.getElementById('activityBox'))`)}`;
+  }
+}
+
+/* ---- Counting fun (ages 3–5) ---- */
+function renderCounting(l, box){
+  const n=l.vocabulary.length;
+  const choices=Array.from(new Set([n,n-1,n+1,n+2].filter(x=>x>0))).sort(()=>Math.random()-0.5);
+  box.innerHTML=`<h2>🔢 Counting fun</h2><p class="muted">Count the sheep below.</p>
+    <div class="sheep-count">${'🐑'.repeat(n)}</div><div class="question">How many sheep do you see?</div>
+    <div class="options" id="countOptions"></div><div id="countFeedback" class="feedback" role="status"></div><div id="countDone"></div>`;
+  const wrap=document.getElementById('countOptions');
+  choices.forEach(c=>{ const d=document.createElement('button'); d.type='button'; d.className='option'; d.textContent=c;
+    d.onclick=()=>{
+      document.querySelectorAll('#countOptions .option').forEach(o=>{ o.onclick=null; if(Number(o.textContent)===n) o.classList.add('correct'); });
+      const fb=document.getElementById('countFeedback'); const isCorrect=c===n;
+      recordActivityScore(l.id,'count', isCorrect?10:0, 10, true);
+      if(isCorrect){ fb.textContent='🎉 Yes! '+n+' sheep. '+bankedLine(l.id,'count',10); fb.style.color='#1E8A4C'; }
+      else { d.classList.add('wrong'); fb.textContent='So close — there are '+n+' sheep.'; fb.style.color='#D14343'; }
+      document.getElementById('countDone').innerHTML=againBar(`renderCounting(getLesson('${l.id}'),document.getElementById('activityBox'))`);
+    }; wrap.appendChild(d); });
+}
+
+/* ---- Deeper dive (ages 10–12) ---- */
+let ddRefScore=0;
+function renderDeeperDive(l, box){
+  ddRefScore=0;
+  const allRefs=STATE.lessons.map(x=>x.story.reference).filter(Boolean);
+  const distractors=allRefs.filter(r=>r!==l.story.reference).sort(()=>Math.random()-0.5).slice(0,3);
+  const options=[l.story.reference, ...distractors].sort(()=>Math.random()-0.5);
+  box.innerHTML=`<h2>🧭 Deeper dive</h2><h3>Match the Bible reference</h3>
+    <div class="question" style="font-size:15.5px">Which reference does this week's story, “${esc(l.story.title)}”, come from?</div>
+    <div class="options" id="ddOptions"></div><div id="ddFeedback" class="feedback" role="status"></div>
+    <h3 style="margin-top:22px">Reflect</h3><p class="muted">In your own words, what does this story teach you about God? There's no wrong answer here.</p>
+    <textarea id="ddReflect" class="input reflect-box" placeholder="Write what you think…"></textarea>
+    <div class="toolbar"><button class="btn secondary" onclick="showReflectSample('${l.id}')">Show a sample thought</button>
+    <button class="btn" onclick="finishReflect('${l.id}')">I'm done reflecting</button></div>
+    <p id="ddSample" class="muted" style="display:none"></p><div id="ddDone"></div>`;
+  const wrap=document.getElementById('ddOptions');
+  options.forEach(o=>{ const d=document.createElement('button'); d.type='button'; d.className='option'; d.textContent=o;
+    d.onclick=()=>{
+      document.querySelectorAll('#ddOptions .option').forEach(el=>{ el.onclick=null; if(el.textContent===l.story.reference) el.classList.add('correct'); });
+      const fb=document.getElementById('ddFeedback');
+      if(o===l.story.reference){ ddRefScore=10; fb.textContent='🎉 Correct!'; fb.style.color='#1E8A4C'; }
+      else { ddRefScore=0; d.classList.add('wrong'); fb.textContent='Not quite — the correct reference is '+l.story.reference+'.'; fb.style.color='#D14343'; }
+      recordActivityScore(l.id,'deeper', ddRefScore, 25, false);
+    }; wrap.appendChild(d); });
+}
+function showReflectSample(lessonId){ const l=getLesson(lessonId); const sample=document.getElementById('ddSample');
+  sample.textContent='💡 One idea: '+((l.lessonPoints&&l.lessonPoints[0])||l.story.summary); sample.style.display='block'; }
+function finishReflect(lessonId){
+  recordActivityScore(lessonId,'deeper', ddRefScore+15, 25, true);
+  const fb=document.getElementById('ddFeedback'); fb.textContent='⭐ Thanks for reflecting. '+bankedLine(lessonId,'deeper',25); fb.style.color='#1E8A4C';
+  document.getElementById('ddDone').innerHTML=againBar(`renderDeeperDive(getLesson('${lessonId}'),document.getElementById('activityBox'))`);
+}
+
+/* ===================== BADGES ===================== */
+const BADGE_DEFS = [
+  {icon:'📖', name:'Bible Explorer', desc:'Complete every activity in at least one week', check:()=>Object.values(PROGRESS.completed).some(w=>Object.keys(w).length>=4)},
+  {icon:'📜', name:'Verse Keeper', desc:'Complete the memory verse challenge twice', check:()=>Object.values(PROGRESS.completed).filter(w=>w.memory).length>=2},
+  {icon:'🔎', name:'Bible Detective', desc:"Answer 5 'Who am I?' clues correctly", check:()=>(PROGRESS.whoAmICorrect||0)>=5},
+  {icon:'🔤', name:'Word Search Star', desc:'Complete a full word search', check:()=>Object.values(PROGRESS.completed).some(w=>w.wordsearch)},
+  {icon:'🐑', name:'Shepherd Friend', desc:'Reach 100 adventure points', check:()=>(PROGRESS.points||0)>=100},
+  {icon:'💪', name:'Diligent Learner', desc:'Play the same activity 3 or more times', check:()=>Object.values(PROGRESS.playCounts).some(n=>n>=3)},
+  {icon:'🔥', name:'Consistency Champ', desc:'Play activities 15 times in total', check:()=>totalPlays()>=15},
+  {icon:'🏗️', name:'Hard Worker', desc:'Reach the maximum points on 3 different activities', check:()=>Object.values(PROGRESS.scores).filter(s=>s.score>=s.max && s.max>0).length>=3},
+];
+function countBadges(){ return BADGE_DEFS.filter(b=>b.check()).length; }
+function renderBadges(){
+  const el=document.getElementById('badges');
+  el.innerHTML=`<h1>My badges and progress</h1>
+    <div class="card"><h2>🌟 My adventure progress</h2>
+    <div class="progress"><div style="width:${Math.min(100,PROGRESS.points||0)}%"></div></div>
+    <p><strong>${PROGRESS.points||0} points</strong> earned so far · ${totalPlays()} activities played</p>
+    <p class="muted">Points are banked per activity up to its maximum, so replaying a finished game won't add more points — but every replay counts toward the diligence, consistency and hard work badges below.</p></div>
+    <div class="badge-row" style="margin-top:16px">
+      ${BADGE_DEFS.map(b=>{const earned=b.check(); return `<div class="badge ${earned?'':'locked'}"><div class="big">${b.icon}</div><strong>${esc(b.name)}</strong><div class="muted">${esc(b.desc)}</div></div>`;}).join('')}
+    </div>`;
+}
+
+/* ===================== TEACHER LOGIN (Firebase Auth) ===================== */
+function renderTeacherGate(){
+  if(teacherUnlocked) return renderTeacher();
+  const el = document.getElementById('teacher');
+  el.innerHTML = `<div class="login-wrap"><div class="login-card">
+    <h1>🔒 Teacher sign-in</h1>
+    <p class="muted">Sign in with the teacher account created in the Firebase console to plan lessons, upload images, and view class progress.</p>
+    <div id="loginMsg" class="banner bad" style="display:none"></div>
+    <label class="field">Email</label><input class="input" id="loginEmail" type="email" autocomplete="username">
+    <label class="field">Password</label><input class="input" id="loginPassword" type="password" autocomplete="current-password"
+      onkeydown="if(event.key==='Enter')teacherLogin()">
+    <div class="toolbar"><button class="btn" style="width:100%" onclick="teacherLogin()">Sign in</button></div>
+    <p class="muted" style="margin-top:10px">Teacher accounts are added in the Firebase console → Authentication tab (see SETUP.md).</p>
+  </div></div>`;
+}
+async function teacherLogin(){
+  const email = document.getElementById('loginEmail').value.trim();
+  const pw = document.getElementById('loginPassword').value;
+  const msg = document.getElementById('loginMsg');
+  if(!dbReady){ msg.style.display='block'; msg.textContent='Firebase is not configured yet — see SETUP.md.'; return; }
+  try{ await signInWithEmailAndPassword(auth, email, pw); }
+  catch(e){ msg.style.display='block'; msg.textContent='That email or password was not recognised.'; }
+}
+function lockTeacher(){ if(dbReady) signOut(auth); }
+if(dbReady){
+  onAuthStateChanged(auth, user=>{
+    teacherUnlocked = !!user;
+    teacherEmail = user ? user.email : '';
+    document.getElementById('sidebarFoot').textContent = teacherUnlocked ? ('Signed in as '+teacherEmail) : 'Learn it. Play it. Remember it. Live it.';
+    if(document.getElementById('teacher').classList.contains('active')) renderTeacherGate();
+  });
+}
+
+/* ===================== TEACHER DASHBOARD ===================== */
+let editingLessonId=null, teacherCharacters=[{name:'',clue:''}], teacherCharactersInitializedFor='unset';
+let teacherSection='dashboard', draftImage=null;
+let flashMessage=null; // one-shot banner shown at the top of whichever teacher screen renders next
+
+function renderCharacterRows(){
+  const wrap=document.getElementById('tfCharacters'); if(!wrap) return;
+  wrap.innerHTML=teacherCharacters.map((c,i)=>`
+    <div style="display:flex;gap:8px;margin-bottom:8px;align-items:flex-start">
+      <div style="flex:1">
+        <input class="input char-name" data-i="${i}" placeholder="Character name" value="${esc(c.name)}">
+        <input class="input char-clue" data-i="${i}" placeholder="I am… (clue)" style="margin-top:6px" value="${esc(c.clue)}">
+      </div>${teacherCharacters.length>1?`<button type="button" class="btn secondary" style="padding:8px 12px" onclick="removeCharacterRow(${i})">Remove</button>`:''}
+    </div>`).join('');
+  wrap.querySelectorAll('.char-name').forEach(el=>el.addEventListener('input', e=>{
+    const i = Number(e.target.dataset.i);
+    if(teacherCharacters[i]){ teacherCharacters[i].name = e.target.value; renderCharacterSummary(); }
+  }));
+  wrap.querySelectorAll('.char-clue').forEach(el=>el.addEventListener('input', e=>{
+    const i = Number(e.target.dataset.i);
+    if(teacherCharacters[i]){ teacherCharacters[i].clue = e.target.value; renderCharacterSummary(); }
+  }));
+  renderCharacterSummary();
+}
+function renderCharacterSummary(){
+  const el = document.getElementById('charSummary'); if(!el) return;
+  const filled = teacherCharacters.filter(c=>(c.name||'').trim());
+  el.textContent = filled.length
+    ? 'Ready to save: ' + filled.map(c=>c.name.trim()).join(', ')
+    : 'No named characters yet — type a name above and it will appear here.';
+}
+function addCharacterRow(){ teacherCharacters.push({name:'',clue:''}); renderCharacterRows(); }
+function removeCharacterRow(i){ teacherCharacters.splice(i,1); if(!teacherCharacters.length) teacherCharacters=[{name:'',clue:''}]; renderCharacterRows(); }
+function cancelEdit(){ editingLessonId=null; teacherCharactersInitializedFor='unset'; draftImage=null; teacherSection='lessons'; renderTeacher(); }
+function teacherTab(name){ teacherSection=name; editingLessonId=null; teacherCharactersInitializedFor='unset'; draftImage=null; flashMessage=null; renderTeacher(); }
+function teacherEdit(id){ editingLessonId=id; teacherSection='editor'; teacherCharactersInitializedFor='unset'; draftImage = id ? (lessonImage(getLesson(id))||null) : null; flashMessage=null; renderTeacher(); }
+function teacherPreview(id){ if(id) currentLessonId=id; go('lesson'); }
+async function deleteLesson(id){
+  const l=getLesson(id); if(!confirm('Delete "'+(l?l.topic:'this lesson')+'"? This cannot be undone.')) return;
+  try{ await deleteDoc(doc(db,'lessons',id)); }catch(e){ alert('Could not delete online. Check the connection.'); }
+}
+function relativeTime(ts){
+  const t = ts && ts.toMillis ? ts.toMillis() : ts;
+  if(!t) return 'Never';
+  const mins=Math.floor((Date.now()-t)/60000);
+  if(mins<1) return 'Just now'; if(mins<60) return mins+' min ago';
+  const hrs=Math.floor(mins/60); if(hrs<24) return hrs+' hr'+(hrs===1?'':'s')+' ago';
+  const days=Math.floor(hrs/24); if(days<30) return days+' day'+(days===1?'':'s')+' ago';
+  return new Date(t).toLocaleDateString();
+}
+function lessonStatus(l){ return l.status||'Published'; }
+function lessonStatusClass(s){ return s==='Draft'?'status-draft':s==='Review'?'status-review':'status-live'; }
+function teacherLessonRows(){
+  return STATE.lessons.map(l=>`<tr>
+    <td>${lessonImage(l)?`<img src="${lessonImage(l)}" alt="" style="width:52px;height:38px;object-fit:cover;border-radius:7px">`:'<span class="muted">No image</span>'}</td>
+    <td><strong>${esc(l.date||'—')}</strong></td><td>${esc(l.topic||'Untitled')}</td><td>${esc(l.story?.title||'—')}</td>
+    <td><span class="status ${lessonStatusClass(lessonStatus(l))}">${esc(lessonStatus(l))}</span></td>
+    <td><div class="toolbar" style="margin:0">
+      <button class="btn secondary" onclick="teacherEdit('${l.id}')">Edit</button>
+      <button class="btn secondary" onclick="teacherPreview('${l.id}')">Preview</button>
+      <button class="btn danger" onclick="deleteLesson('${l.id}')">Delete</button>
+    </div></td></tr>`).join('');
+}
+async function fetchAllProgress(){
+  if(!dbReady) return {};
+  const snap = await getDocs(collection(db,'progress'));
+  const out = {}; snap.forEach(d=>out[d.id]=d.data()); return out;
+}
+async function buildEngagementTable(){
+  if(!PROFILES.length) return `<p class="muted">No children have a profile yet.</p>`;
+  const all = await fetchAllProgress();
+  const rows = PROFILES.map(p=>{
+    const prog = all[p.id]||{};
+    return {p, points:prog.points||0, lessonsEngaged: prog.completed?Object.keys(prog.completed).length:0,
+      plays: prog.playCounts?Object.values(prog.playCounts).reduce((s,v)=>s+v,0):0, last: prog.lastActive||null};
+  }).sort((a,b)=>(b.last||0)-(a.last||0));
+  return `<div class="table-scroll"><table><tr><th>Name</th><th>Age group</th><th>PIN</th><th>Points</th><th>Lessons engaged</th><th>Activities played</th><th>Last active</th><th></th></tr>
+    ${rows.map(r=>`<tr><td>${esc(r.p.name||'(no name)')}</td><td>${AGE_GROUPS[r.p.ageGroup].emoji} ${esc(AGE_GROUPS[r.p.ageGroup].label)}</td>
+      <td>${r.p.pinHash?'🔒 Set':'— None'}</td>
+      <td>${r.points}</td><td>${r.lessonsEngaged} / ${STATE.lessons.length}</td><td>${r.plays}</td><td>${esc(relativeTime(r.last))}</td>
+      <td><div class="toolbar" style="margin:0">
+        <button class="btn secondary" onclick="openProfileForm('${r.p.id}')">Edit</button>
+        <button class="btn secondary" onclick="resetChildPin('${r.p.id}')">${r.p.pinHash?'Reset PIN':'Set PIN'}</button>
+        <button class="btn danger" onclick="removeProfile('${r.p.id}')">Remove</button>
+      </div></td></tr>`).join('')}</table></div>`;
+}
+async function teacherReports(){
+  const all = await fetchAllProgress();
+  let points=0, plays=0, active=0;
+  PROFILES.forEach(p=>{ const x=all[p.id]||{}; points+=x.points||0; plays+=Object.values(x.playCounts||{}).reduce((a,b)=>a+b,0);
+    if(x.lastActive && Date.now()-x.lastActive<7*86400000) active++; });
+  const rows = PROFILES.map(p=>{ const x=all[p.id]||{}; return {p,x,lessons:Object.keys(x.completed||{}).length,plays:Object.values(x.playCounts||{}).reduce((a,b)=>a+b,0)}; })
+    .sort((a,b)=>(b.x.points||0)-(a.x.points||0));
+  return `<div class="grid grid4">
+    <div class="card"><div class="stat">${PROFILES.length}</div><div class="muted">Children registered</div></div>
+    <div class="card"><div class="stat">${active}</div><div class="muted">Active in last 7 days</div></div>
+    <div class="card"><div class="stat">${points}</div><div class="muted">Adventure points</div></div>
+    <div class="card"><div class="stat">${plays}</div><div class="muted">Activity plays</div></div>
+  </div>
+  <div class="card" style="margin-top:18px"><h2>📈 Child progress</h2><div class="table-scroll"><table>
+    <tr><th>Child</th><th>Age group</th><th>Points</th><th>Lessons</th><th>Activities</th><th>Last active</th></tr>
+    ${rows.map(r=>`<tr><td>${esc(r.p.name||'(no name)')}</td><td>${esc(AGE_GROUPS[r.p.ageGroup]?.label||'')}</td>
+      <td>${r.x.points||0}</td><td>${r.lessons}/${STATE.lessons.length}</td><td>${r.plays}</td><td>${esc(relativeTime(r.x.lastActive))}</td></tr>`).join('')}
+  </table></div></div>`;
+}
+
+function kb(dataUri){ return Math.round((dataUri.length*3/4)/1024); }
+function handleImageFile(input){
+  const file = input.files && input.files[0]; if(!file) return;
+  const note = document.getElementById('imgNote');
+  if(!/^image\//.test(file.type)){ note.textContent='That file is not an image. Choose a JPG, PNG or WebP.'; return; }
+  note.textContent='Preparing image…';
+  const reader = new FileReader();
+  reader.onload = e=>{
+    const img = new Image();
+    img.onload = ()=>{
+      const MAX=1200; const scale=Math.min(1, MAX/img.width);
+      const canvas=document.createElement('canvas'); canvas.width=Math.round(img.width*scale); canvas.height=Math.round(img.height*scale);
+      const ctx=canvas.getContext('2d'); ctx.fillStyle='#fff'; ctx.fillRect(0,0,canvas.width,canvas.height); ctx.drawImage(img,0,0,canvas.width,canvas.height);
+      let out=canvas.toDataURL('image/jpeg',0.7);
+      if(kb(out)>350) out=canvas.toDataURL('image/jpeg',0.5);
+      if(kb(out)>350) out=canvas.toDataURL('image/jpeg',0.35);
+      draftImage=out; renderImageField();
+    };
+    img.onerror=()=>{ note.textContent='That image could not be read. Try a different file.'; };
+    img.src=e.target.result;
+  };
+  reader.onerror=()=>{ note.textContent='That image could not be read. Try a different file.'; };
+  reader.readAsDataURL(file);
+}
+function removeDraftImage(){ draftImage=null; renderImageField(); }
+function renderImageField(){
+  const wrap=document.getElementById('imgField'); if(!wrap) return;
+  wrap.innerHTML = draftImage ? `
+    <img class="img-preview" src="${draftImage}" alt="Lesson image preview">
+    <div class="img-meta">About ${kb(draftImage)} KB — stored directly in the lesson record, well under Firestore's 1 MB document limit.</div>
+    <div class="toolbar">
+      <label class="btn secondary" style="cursor:pointer">Replace image<input type="file" accept="image/*" style="display:none" onchange="handleImageFile(this)"></label>
+      <button class="btn danger" onclick="removeDraftImage()">Remove image</button>
+    </div><div id="imgNote" class="img-meta"></div>` : `
+    <div class="img-drop"><div style="font-size:30px">🖼️</div>
+      <p class="muted" style="margin:6px 0 12px">Add a picture for this lesson.</p>
+      <label class="btn" style="cursor:pointer">Choose image<input type="file" accept="image/*" style="display:none" onchange="handleImageFile(this)"></label>
+      <div id="imgNote" class="img-meta"></div></div>`;
+}
+function teacherEditor(){
+  const editing = editingLessonId ? getLesson(editingLessonId) : null;
+  if(teacherCharactersInitializedFor!==editingLessonId){
+    teacherCharacters = (editing?.characters?.length) ? editing.characters.map(c=>({name:c.name,clue:c.clue})) : [{name:'',clue:''}];
+    teacherCharactersInitializedFor = editingLessonId;
+  }
+  const status = editing ? lessonStatus(editing) : 'Draft';
+  return `<div class="card">
+  <div class="section-head"><div><h2>${editing?'Edit lesson':'Create the next lesson'}</h2>
+    <p class="muted">Every signed-in teacher device sees this the moment you publish.</p></div>
+    <span class="status ${lessonStatusClass(status)}">${esc(status)}</span></div>
+  <div class="banner warn" id="teacherBanner" style="display:none"></div>
+  <label class="field">Lesson picture</label><div id="imgField"></div>
+  <div class="grid grid2">
+    <div><label class="field">Date</label><input class="input" id="tfDate" value="${esc(editing?.date||'')}" placeholder="Sunday, 4 October 2026"></div>
+    <div><label class="field">Theme</label><input class="input" id="tfTheme" value="${esc(editing?.theme||'')}"></div>
+  </div>
+  <label class="field">Topic</label><input class="input" id="tfTopic" value="${esc(editing?.topic||'')}">
+  <div class="grid grid2">
+    <div><label class="field">Memory verse reference</label><input class="input" id="tfRef" value="${esc(editing?.reference||'')}"></div>
+    <div><label class="field">Memory verse text</label><input class="input" id="tfVerseText" value="${esc(editing?.memoryVerse?.text||'')}"></div>
+  </div>
+  <div class="grid grid2">
+    <div><label class="field">Bible story title</label><input class="input" id="tfStoryTitle" value="${esc(editing?.story?.title||'')}"></div>
+    <div><label class="field">Bible story reference</label><input class="input" id="tfStoryRef" value="${esc(editing?.story?.reference||'')}"></div>
+  </div>
+  <label class="field">Bible story summary</label><textarea class="input" id="tfSummary" rows="4">${esc(editing?.story?.summary||'')}</textarea>
+  <label class="field">What can we learn? — one point per line</label><textarea class="input" id="tfLessonPoints" rows="4">${esc((editing?.lessonPoints||[]).join('\n'))}</textarea>
+  <label class="field">Confession — one statement per line</label><textarea class="input" id="tfConfession" rows="3">${esc((editing?.confession||[]).join('\n'))}</textarea>
+  <label class="field">Vocabulary for games — comma separated</label><input class="input" id="tfVocab" value="${esc((editing?.vocabulary||[]).join(', '))}">
+  <label class="field">Characters for “Who am I?”</label><div id="tfCharacters"></div>
+  <p id="charSummary" class="muted" style="margin:4px 0 10px"></p>
+  <button type="button" class="btn secondary" onclick="addCharacterRow()">Add character</button>
+  <label class="field">Status</label><select class="input" id="tfStatus">${['Draft','Review','Published'].map(s=>`<option ${status===s?'selected':''}>${s}</option>`).join('')}</select>
+  <div class="toolbar">
+    <button class="btn secondary" onclick="teacherPreview('${editing?.id||''}')">Preview as a child</button>
+    <button class="btn green" id="publishBtn" onclick="publishLesson()">${editing?'Save and publish':'Publish lesson'}</button>
+    ${editing?'<button class="btn secondary" onclick="cancelEdit()">Cancel</button>':''}
+  </div>
+  <label class="field">Quiz questions (JSON)</label>
+  <textarea class="input" id="tfQuiz" rows="7" placeholder='[{"q":"…","options":["…","…","…","…"],"correct":0}]'>${editing?esc(JSON.stringify(editing.quiz||[],null,2)):''}</textarea>
+  <p class="footer-note">Ask Claude.ai in a separate tab to help draft quiz questions, then paste the JSON above — this standalone app no longer has Claude's built-in AI tools, since those only run inside Claude's own hosting.</p>
+  </div>`;
+}
+function teacherSettings(){
+  return `<div class="card">
+    <h1>Teacher settings</h1>
+    <p class="muted">Signed in as ${esc(teacherEmail)}.</p>
+    <div class="banner warn">Children's profiles and progress are open by design (children don't log in), so anyone with the app link can read or edit them. That's fine for a small, trusted class; it is not appropriate to share this link publicly.</div>
+    <label class="field">Current password</label><input class="input" id="pcOld" type="password" autocomplete="current-password">
+    <label class="field">New password (6+ characters)</label><input class="input" id="pcNew" type="password" autocomplete="new-password">
+    <label class="field">Repeat new password</label><input class="input" id="pcNew2" type="password" autocomplete="new-password">
+    <div class="toolbar"><button class="btn green" onclick="changePassword()">Update password</button>
+      <button class="btn secondary" onclick="lockTeacher()">Log out</button></div>
+    <div id="pcMsg" class="feedback" role="status"></div>
+    <p class="footer-note">To add another teacher, go to the Firebase console → Authentication → Users → Add user. There's no in-app way to do this without signing the current teacher out, so it's kept in the console.</p>
+  </div>`;
+}
+async function changePassword(){
+  const msg=document.getElementById('pcMsg'); msg.style.color='#D14343';
+  const oldPw=document.getElementById('pcOld').value, a=document.getElementById('pcNew').value, b=document.getElementById('pcNew2').value;
+  if(a.length<6){ msg.textContent='Use at least 6 characters.'; return; }
+  if(a!==b){ msg.textContent='The two new passwords do not match.'; return; }
+  try{
+    const cred = EmailAuthProvider.credential(auth.currentUser.email, oldPw);
+    await reauthenticateWithCredential(auth.currentUser, cred);
+    await updatePassword(auth.currentUser, a);
+    msg.style.color='#1E8A4C'; msg.textContent='Password updated.';
+  }catch(e){ msg.textContent='Could not update the password — check the current password and try again.'; }
+}
+async function seedStarterLessons(){
+  const msg = STATE.lessons.length
+    ? 'You already have '+STATE.lessons.length+' lesson(s). Load the 4 starter lessons anyway? (This adds them alongside your existing lessons — it won\'t replace or remove anything.)'
+    : 'Load the four starter lessons into this app?';
+  if(!confirm(msg)) return;
+  const starters = starterLessons();
+  const maxSeq = STATE.lessons.reduce((m,l)=>Math.max(m, l.seq||0), 0);
+  try{
+    for(const l of starters){ await addDoc(collection(db,'lessons'), {...l, seq: maxSeq + l.seq, createdAt: serverTimestamp()}); }
+    alert('Starter lessons added.');
+  }catch(e){ alert('Could not add starter lessons. Check the connection and try again.'); }
+}
+function renderTeacher(){
+  const el=document.getElementById('teacher');
+  if(!teacherUnlocked) return renderTeacherGate();
+  if(teacherSection==='editor' && teacherCharactersInitializedFor===editingLessonId && document.getElementById('tfTopic')){
+    // The editor is already open and fully built for this exact lesson.
+    // Skip rebuilding it — this is what actually stops any background
+    // data refresh (present or future) from overwriting text the teacher
+    // has typed but not yet published, no matter what triggers it.
+    return;
+  }
+  let body='';
+  if(teacherSection==='dashboard') body=`
+    <div class="teacher-hero"><div><h1>Teacher dashboard</h1><p>Plan the weekly lesson, add its picture, check engagement and preview what the children see.</p></div>
+      <div class="teacher-hero-icon">🧑‍🏫📖</div></div>
+    <div class="grid grid4">
+      <div class="card"><div class="stat">${STATE.lessons.length}</div><div class="muted">Lessons</div></div>
+      <div class="card"><div class="stat">${PROFILES.length}</div><div class="muted">Child profiles</div></div>
+      <div class="card"><div class="stat">${dbReady?'Live':'Offline'}</div><div class="muted">Firebase connection</div></div>
+      <div class="card"><div class="stat">${teacherEmail?'✅':'—'}</div><div class="muted">Signed in</div></div>
+    </div>
+    <div class="grid grid2" style="margin-top:18px">
+      <div class="card action-card"><h2>📚 Lessons</h2><p>Create, edit, illustrate, publish or delete lessons.</p><button class="btn" onclick="teacherTab('lessons')">Open lessons</button></div>
+      <div class="card action-card"><h2>📊 Class progress</h2><p>See engagement across every device.</p><button class="btn" onclick="teacherTab('progress')">View progress</button></div>
+      <div class="card action-card"><h2>👧 Class</h2><p>See and manage the shared list of children.</p><button class="btn secondary" onclick="teacherTab('class')">Open class</button></div>
+      <div class="card action-card"><h2>👀 Child preview</h2><p>See this week as a child sees it.</p><button class="btn secondary" onclick="teacherPreview((pickCurrentLesson()||{}).id||'')">Preview this week</button></div>
+    </div>${!STATE.lessons.length?`<div class="banner warn" style="margin-top:18px">No lessons yet. <button class="btn gold" style="margin-left:8px" onclick="seedStarterLessons()">Load the 4 starter lessons</button></div>`:''}`;
+  if(teacherSection==='lessons') body=`
+    ${flashMessage?`<div class="banner ok">${esc(flashMessage)}</div>`:''}
+    <div class="section-head"><div><h1>Lessons</h1><p class="muted">Manage the weekly teaching content.</p></div>
+      <div class="toolbar" style="margin:0">
+        <button class="btn secondary" onclick="seedStarterLessons()">Load the 4 starter lessons</button>
+        <button class="btn" onclick="teacherEdit(null)">New lesson</button>
+      </div></div>
+    <div class="card"><div class="table-scroll"><table><tr><th>Picture</th><th>Date</th><th>Topic</th><th>Story</th><th>Status</th><th></th></tr>${teacherLessonRows()}</table></div></div>`;
+  if(teacherSection==='editor') body=teacherEditor();
+  if(teacherSection==='class') body=`
+    <div class="section-head"><div><h1>Children</h1><p class="muted">Shared roster — visible from every device.</p></div></div>
+    <div class="card" id="classCard"><p class="muted">Loading…</p></div>`;
+  if(teacherSection==='progress') body=`
+    <div class="section-head"><div><h1>Progress reports</h1><p class="muted">Engagement and activity summary.</p></div></div>
+    <div id="reportsCard"><p class="muted">Loading…</p></div>`;
+  if(teacherSection==='settings') body=teacherSettings();
+  el.innerHTML=`<div class="teacher-nav">
+    <button class="${teacherSection==='dashboard'?'selected':''}" onclick="teacherTab('dashboard')">🏠 Dashboard</button>
+    <button class="${teacherSection==='lessons'?'selected':''}" onclick="teacherTab('lessons')">📚 Lessons</button>
+    <button class="${teacherSection==='class'?'selected':''}" onclick="teacherTab('class')">👧 Class</button>
+    <button class="${teacherSection==='progress'?'selected':''}" onclick="teacherTab('progress')">📊 Progress</button>
+    <button class="${teacherSection==='settings'?'selected':''}" onclick="teacherTab('settings')">⚙️ Settings</button>
+    <span class="spacer"></span><button onclick="lockTeacher()">🔓 Log out</button>
+  </div>${body}`;
+  if(teacherSection==='editor'){ renderCharacterRows(); renderImageField(); }
+  if(teacherSection==='class') buildEngagementTable().then(html=>{ const c=document.getElementById('classCard'); if(c) c.innerHTML=html; });
+  if(teacherSection==='progress') teacherReports().then(html=>{ const c=document.getElementById('reportsCard'); if(c) c.innerHTML=html; });
+}
+function val(id){ const el=document.getElementById(id); return el?el.value.trim():''; }
+async function publishLesson(){
+  const banner=document.getElementById('teacherBanner');
+  const topic=val('tfTopic'), summary=val('tfSummary');
+  banner.style.display='block';
+  if(!topic||!summary){ banner.style.background='#FFF3D6'; banner.textContent='Add at least the topic and the Bible story summary.'; return; }
+  let quiz=[]; const quizRaw=val('tfQuiz');
+  if(quizRaw){ try{ quiz=JSON.parse(quizRaw); }catch(e){ banner.style.background='#FDEBEB'; banner.textContent='The quiz JSON has a typo. Fix it, or clear the box to publish without a quiz.'; return; } }
+  const existing = editingLessonId ? getLesson(editingLessonId) : null;
+  const lessonObj = {
+    date: val('tfDate') || 'Untitled week',
+    image: draftImage || '',
+    status: val('tfStatus') || 'Published',
+    theme: val('tfTheme') || topic,
+    topic, reference: val('tfRef'),
+    bibleReading: [val('tfStoryRef')].filter(Boolean),
+    story: {title: val('tfStoryTitle')||topic, reference: val('tfStoryRef'), summary},
+    lessonPoints: val('tfLessonPoints').split('\n').map(s=>s.trim()).filter(Boolean),
+    confession: val('tfConfession').split('\n').map(s=>s.trim()).filter(Boolean),
+    memoryVerse: {text: val('tfVerseText'), reference: val('tfRef')},
+    characters: teacherCharacters.map(c=>({name:(c.name||'').trim(), clue:(c.clue||'').trim()})).filter(c=>c.name),
+    vocabulary: val('tfVocab').split(',').map(s=>s.trim().toUpperCase()).filter(Boolean),
+    quiz
+  };
+  if(existing && existing.chooseBetter) lessonObj.chooseBetter = existing.chooseBetter;
+  const sizeBytes = new Blob([JSON.stringify(lessonObj)]).size;
+  if(sizeBytes > MAX_LESSON_DOC_BYTES){
+    banner.style.background='#FDEBEB';
+    banner.textContent = 'This lesson (about '+Math.round(sizeBytes/1024)+' KB) is too large to store — please use a smaller picture.';
+    return;
+  }
+  banner.style.background='#FFF3D6'; banner.textContent='Publishing…';
+  const publishBtn = document.getElementById('publishBtn');
+  if(publishBtn) publishBtn.disabled = true;
+  try{
+    if(editingLessonId){
+      await updateDoc(doc(db,'lessons',editingLessonId), lessonObj);
+    } else {
+      const maxSeq = STATE.lessons.reduce((m,l)=>Math.max(m, l.seq||0), 0);
+      await addDoc(collection(db,'lessons'), {...lessonObj, seq: maxSeq+1, createdAt: serverTimestamp()});
+    }
+    // Leave the editor now that the write has been accepted, so the live
+    // lessons listener (which fires the moment this write lands) is free
+    // to refresh the screen without wiping a form that's still open.
+    teacherSection = 'lessons';
+    editingLessonId = null;
+    teacherCharactersInitializedFor = 'unset';
+    draftImage = null;
+    const savedBits = [];
+    savedBits.push(lessonObj.quiz.length + ' quiz question' + (lessonObj.quiz.length===1?'':'s'));
+    savedBits.push(lessonObj.characters.length + ' "Who am I?" character' + (lessonObj.characters.length===1?'':'s'));
+    flashMessage = 'Published "' + lessonObj.topic + '" with ' + savedBits.join(' and ') + '.';
+    renderTeacher();
+  }catch(e){
+    if(publishBtn) publishBtn.disabled = false;
+    banner.style.background='#FDEBEB'; banner.textContent='Publishing did not go through. Check the connection and try again.';
+  }
+}
+
+/* ===================== STARTER LESSON DATA (for the "Load starter lessons" button) ===================== */
+function starterLessons(){
+  return [
+    {seq:1, date:"Sunday, 6 September 2026", image:"", status:"Published", theme:"The Lord is my Shepherd", topic:"The Lord Is Always With Me", reference:"Psalm 23:4",
+     bibleReading:["Psalm 23:1-end","John 10:1-18","Daniel 3:1-30"],
+     story:{title:"Shadrach, Meshach and Abednego", reference:"Daniel 3:1-30", summary:"King Nebuchadnezzar made a golden statue and told everyone to bow down to it. Shadrach, Meshach and Abednego refused because they loved and obeyed God. The king was angry and threw them into a very hot fire. But God was with them! The fire did not harm them, and they came out unhurt. The king saw that God is the only true God."},
+     lessonPoints:["They refused to bow down to an idol; they chose to obey God instead.","God was with them in the fire because they followed God's instructions, just like sheep follow their shepherd.","This means that God is always with me because I allow Jesus to be my shepherd.","The fire did not burn them because God was with them. If God is with me, no situation can harm me.","Just like these three men were not afraid of the fire, I am not afraid of anything because the Lord is my shepherd."],
+     confession:["Jesus is my Shepherd, and He is always with me.","Jesus loves me and protects me.","I follow Jesus, and He keeps me safe.","The Lord is with me; I will not be afraid!"],
+     memoryVerse:{text:"The Lord is with me; I am not afraid.", reference:"Psalm 23:4"},
+     characters:[{name:"Shadrach, Meshach and Abednego", clue:"We are three young men who refused to bow down to the king's golden statue, even though we knew we could be thrown into the fire."},{name:"King Nebuchadnezzar", clue:"I am the king who built a golden statue and commanded everyone to worship it. I became furious when three young men refused."}],
+     vocabulary:["SHADRACH","MESHACH","ABEDNEGO","FIRE","KING","GOD","FAITH","SHEPHERD"],
+     quiz:[{q:"Why did Shadrach, Meshach and Abednego refuse to bow down to the golden statue?", options:["They loved and obeyed God","They were afraid of the king","They did not see the statue","They wanted to leave Babylon"], correct:0},
+       {q:"What happened when the three men were thrown into the fire?", options:["They were burned","God protected them and they were not harmed","They ran away","The fire went out"], correct:1},
+       {q:"Who threw Shadrach, Meshach and Abednego into the fire?", options:["Samuel","David","King Nebuchadnezzar","Moses"], correct:2},
+       {q:"What can we learn from this story?", options:["God is always with me when I obey Him","Fire never hurts anyone","Kings are always right","We should hide from trouble"], correct:0}]},
+    {seq:2, date:"Sunday, 13 September 2026", image:"", status:"Published", theme:"The Lord is my Shepherd", topic:"The Lord Has Chosen Me", reference:"1 Peter 2:9",
+     bibleReading:["Psalm 23:1-end","1 Samuel 16:3-13"],
+     story:{title:"David was anointed", reference:"1 Samuel 16:3-13", summary:"God sent Samuel to find a new king. When Samuel saw David, God said, \"This is the one.\" Samuel anointed David with oil, and the Spirit of God came upon him. Even though David was young, God saw his heart and chose him. God has a plan for each of us, and He chooses us because He loves us."},
+     lessonPoints:["God \"anoints my head with oil\" means that God has chosen me.","God has chosen me just the way He chose David. I am special because God has chosen me.","God chose David because his heart was right with God. God has chosen me because Jesus lives in my heart.","God has chosen me to represent Him everywhere and show His power, just as He did through David."],
+     confession:["The Lord is my shepherd,","He loves me and has chosen me to be His child.","My mouth will speak of the wonderful things He has done."],
+     memoryVerse:{text:"We are God's chosen and special people. We must tell all the wonderful things that He has done.", reference:"1 Peter 2:9"},
+     characters:[{name:"David", clue:"I was a young shepherd boy. God chose me to become king, even though nobody expected it — God looked at my heart."},{name:"Samuel", clue:"I am the prophet God sent to find and anoint the next king with oil."}],
+     vocabulary:["DAVID","SAMUEL","ANOINT","CHOSEN","KING","SHEPHERD","HEART","OIL"],
+     quiz:[{q:"Who did God send to find and anoint the new king?", options:["Samuel","Moses","Daniel","Peter"], correct:0},
+       {q:"Why did God choose David to be king?", options:["He was the tallest","God saw his heart","He was the oldest son","He asked to be king"], correct:1},
+       {q:"What does it mean that God \"anoints my head with oil\"?", options:["That God has chosen me","That I am in trouble","That I must go away","Nothing special"], correct:0},
+       {q:"What should we do because we are God's chosen people?", options:["Keep it a secret","Tell of the wonderful things He has done","Only think about ourselves","Wait for others to notice"], correct:1}]},
+    {seq:3, date:"Sunday, 20 September 2026", image:"", status:"Published", theme:"Following Jesus", topic:"The Rich Young Ruler", reference:"Mark 10:28",
+     bibleReading:["Mark 10:17-31"],
+     story:{title:"The Rich Young Ruler", reference:"Mark 10:17-31", summary:"A rich young ruler asked Jesus what he must do to have eternal life. Jesus told him to sell his possessions, give to the poor, and follow Him. But the man went away sad, because he loved his money and riches more than he loved God. Jesus taught that He Himself — not money, toys or riches — is the greatest treasure of all."},
+     lessonPoints:["The rich young ruler loved his money and possessions more than he loved God.","Jesus is the greatest treasure of all — more valuable than money, toys or riches.","Following Jesus means putting Him first, even above the things we love to own.","We show we trust Jesus by choosing to obey Him rather than chasing riches."],
+     confession:["I am following Jesus with my whole heart.","Jesus is my greatest treasure.","I choose to love God more than money or things.","I trust and obey Jesus every day."],
+     memoryVerse:{text:"I am following Jesus with my whole heart.", reference:"Mark 10:28"},
+     characters:[{name:"The Rich Young Ruler", clue:"I was a wealthy man who asked Jesus how to get eternal life — but I walked away sad because I loved my riches too much."},{name:"Jesus", clue:"I taught the rich young ruler that following me is worth more than any treasure on earth."}],
+     vocabulary:["JESUS","TRUST","FOLLOW","LOVE","HEART","KINGDOM","OBEY","RICH"],
+     chooseBetter:[{bad:"Money 💰", good:"Jesus ✝️"},{bad:"Toys 🧸", good:"God's Word 📖"},{bad:"Disobey God 😖", good:"Obey God 🙂"},{bad:"Love Riches 💎", good:"Love God ❤️"},{bad:"Ignore God 😴", good:"Pray 🙏"}],
+     quiz:[{q:"What did Jesus tell the rich young ruler to do?", options:["Sell his possessions and follow Jesus","Stay rich and follow Jesus","Build a bigger house","Ignore the poor"], correct:0},
+       {q:"Why did the rich young ruler walk away sad?", options:["He loved his riches more than God","He didn't like Jesus","He was late for dinner","He had no money at all"], correct:0},
+       {q:"According to this story, what is the greatest treasure of all?", options:["Jesus","Gold","A big house","Jewelry"], correct:0}]},
+    {seq:4, date:"Sunday, 27 September 2026", image:"", status:"Published", theme:"The Lord is my Shepherd", topic:"Dwelling in the House of the Lord", reference:"Psalm 23:6 (NLT)",
+     bibleReading:["Psalm 23:6","Luke 10:38-42","Psalm 27:4"],
+     story:{title:"Mary and Martha", reference:"Luke 10:38-42", summary:"One day, Jesus visited two sisters named Martha and Mary. Martha was busy preparing food and taking care of the house, but Mary sat near Jesus and listened to His teaching. Martha became worried because she was doing all the work alone, and she said, \"Jesus, tell Mary to help me!\" Jesus answered her gently: \"Martha, you are worried about many things. But Mary has chosen what is better.\""},
+     lessonPoints:["Dwelling (living) in the house of the Lord means that we stay in His presence.","Mary showed us how to stay in God's presence: she listened to everything Jesus said with full attention, unlike her sister Martha who was busy serving food.","To stay in God's presence means we always pay attention to what He says to us. God talks to us through the Bible, so we must read it every day with full concentration (Psalm 27:4).","We get many blessings when we stay in God's presence — direction, protection and victory over every problem."],
+     confession:["I stay in God's presence every day.","I listen to God and obey His Word.","I pay attention when I read my Bible.","I hold on to every instruction from the Bible."],
+     memoryVerse:{text:"I will live in the house of the Lord forever.", reference:"Psalm 23:6b (NLT)"},
+     characters:[{name:"Mary", clue:"I sat near Jesus and listened to everything He said with my full attention."},{name:"Martha", clue:"I was busy preparing the food and the house, and I became worried because I was doing all the work alone."},{name:"Jesus", clue:"I visited the home of two sisters and gently taught them what matters most."}],
+     vocabulary:["DWELLING","PRESENCE","LIVING","MARY","MARTHA","JESUS","HOUSE","ATTENTION","LISTENING"],
+     quiz:[{q:"Who visited Martha and Mary's house?", options:["Jesus","Moses","A king","A teacher"], correct:0},
+       {q:"What was Martha busy doing?", options:["Sleeping","Preparing food and the house","Reading a book","Singing songs"], correct:1},
+       {q:"What was Mary doing while Martha worked?", options:["Cooking too","Sitting and listening to Jesus","Playing outside","Cleaning the house"], correct:1},
+       {q:"According to the memory verse, where will we live forever?", options:["In a castle","In the house of the Lord","On a mountain","In a garden"], correct:1}]}
+  ];
+}
+
+/* ===================== BOOT ===================== */
+async function boot(){
+  renderPointsPill(); renderProfileChip(); renderHome();
+  if(dbReady){ watchLessons(); watchProfiles(); }
+  if(activeProfileId) await loadProgressForActiveProfile();
+  renderHome();
+  if(dbReady && !getActiveProfile()) setTimeout(openProfileModal, 400);
+}
+
+/* Expose functions used by inline HTML onclick="" handlers (this file uses ES modules, which are scoped by default). */
+Object.assign(window, {
+  go, openLesson, openLessonActivities, setActivity,
+  openProfileModal, openProfileForm, backToPicker, closeProfileModal, pickPendingAge,
+  chooseProfile, saveProfileAndStart, removeProfile,
+  attemptOpenProfile, childPinPress, childPinClear, pinBackToPicker, childPinSubmit, resetChildPin,
+  getLesson, pickCurrentLesson,
+  answerQuiz, renderQuiz, wsClick, renderWordSearch, checkUnscramble, renderUnscramble,
+  mvPick, mvUnpick, mvReset, renderMemoryVerse, renderMemoryVerseFillBlank, renderMemoryVerseTyped, checkMvTyped,
+  answerWhoAmI, renderWhoAmI, chooseTreasure, renderChooseBetter, renderCounting,
+  showReflectSample, finishReflect, renderDeeperDive,
+  teacherLogin, lockTeacher, teacherTab, teacherEdit, teacherPreview, cancelEdit, deleteLesson,
+  addCharacterRow, removeCharacterRow, handleImageFile, removeDraftImage,
+  publishLesson, changePassword, seedStarterLessons
+});
+</script>
+</body>
+</html>
