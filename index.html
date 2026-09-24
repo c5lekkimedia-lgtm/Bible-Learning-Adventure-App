@@ -118,6 +118,18 @@
   .badge.locked{opacity:.4}
   .badge .big{font-size:34px}
   .badge-row{display:flex;gap:13px;flex-wrap:wrap}
+  .badge.tier{width:66px;padding:9px 4px;border-radius:13px}
+  .badge.tier .big{font-size:21px}
+  .badge.tier .tier-label{display:block;font-size:9.5px;font-weight:800;color:var(--purple-dark);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .badge-family{margin-bottom:16px}
+  .badge-family-head{display:flex;align-items:center;gap:12px}
+  .badge-family-head .big{font-size:38px}
+  .badge-family-head strong{font-size:15px}
+  .leader-row{display:flex;align-items:center;gap:14px;background:white;border:1px solid var(--border);border-radius:14px;padding:12px 16px;margin-bottom:10px}
+  .leader-row.rank-1{border-color:#F0D27B;background:#FFFBEF}
+  .leader-rank{font-size:22px;font-weight:900;color:var(--purple-dark);width:34px;text-align:center;flex-shrink:0}
+  .leader-name{font-weight:800;font-size:14.5px}
+  .leader-points{margin-left:auto;font-weight:800;color:var(--purple-dark);white-space:nowrap}
   .banner{padding:12px 16px;border-radius:12px;font-weight:700;font-size:13.5px;margin-bottom:14px}
   .banner.warn{background:#FFF3D6;color:#8A5A00;border:1px solid #F0D27B}
   .banner.ok{background:var(--green-light);color:var(--green);border:1px solid #B7E3C6}
@@ -196,6 +208,7 @@
       <button data-screen="lesson" onclick="go('lesson',this)"><span class="navicon">📖</span><span class="navlabel">This Week</span></button>
       <button data-screen="activity" onclick="go('activity',this)"><span class="navicon">🎮</span><span class="navlabel">Activities</span></button>
       <button data-screen="badges" onclick="go('badges',this)"><span class="navicon">🏆</span><span class="navlabel">My Badges</span></button>
+      <button data-screen="leaderboard" onclick="go('leaderboard',this)"><span class="navicon">📊</span><span class="navlabel">Leaderboard</span></button>
       <button data-screen="teacher" onclick="go('teacher',this)"><span class="navicon">🧑‍🏫</span><span class="navlabel">Teacher</span></button>
     </nav>
     <div class="sidebar-foot" id="sidebarFoot">Learn it. Play it. Remember it. Live it.</div>
@@ -212,6 +225,7 @@
     <section id="lesson" class="screen"></section>
     <section id="activity" class="screen"></section>
     <section id="badges" class="screen"></section>
+    <section id="leaderboard" class="screen"></section>
     <section id="teacher" class="screen"></section>
   </main>
 </div>
@@ -231,6 +245,7 @@ const firebaseConfig = {
   messagingSenderId: "195171000964",
   appId: "1:195171000964:web:09ade44f8d3f49fc3e18d1"
 };
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import {
   getFirestore, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc,
@@ -601,6 +616,7 @@ function go(id, btn){
   if(id==='lesson') renderLessonScreen();
   if(id==='activity') renderActivityScreen();
   if(id==='badges') renderBadges();
+  if(id==='leaderboard') renderLeaderboard();
   if(id==='teacher') renderTeacherGate();
   window.scrollTo({top:0, behavior:'instant'});
 }
@@ -1058,27 +1074,152 @@ function finishReflect(lessonId){
   document.getElementById('ddDone').innerHTML=againBar(`renderDeeperDive(getLesson('${lessonId}'),document.getElementById('activityBox'))`);
 }
 
-/* ===================== BADGES ===================== */
-const BADGE_DEFS = [
-  {icon:'📖', name:'Bible Explorer', desc:'Complete every activity in at least one week', check:()=>Object.values(PROGRESS.completed).some(w=>Object.keys(w).length>=4)},
-  {icon:'📜', name:'Verse Keeper', desc:'Complete the memory verse challenge twice', check:()=>Object.values(PROGRESS.completed).filter(w=>w.memory).length>=2},
-  {icon:'🔎', name:'Bible Detective', desc:"Answer 5 'Who am I?' clues correctly", check:()=>(PROGRESS.whoAmICorrect||0)>=5},
-  {icon:'🔤', name:'Word Search Star', desc:'Complete a full word search', check:()=>Object.values(PROGRESS.completed).some(w=>w.wordsearch)},
-  {icon:'🐑', name:'Shepherd Friend', desc:'Reach 100 adventure points', check:()=>(PROGRESS.points||0)>=100},
-  {icon:'💪', name:'Diligent Learner', desc:'Play the same activity 3 or more times', check:()=>Object.values(PROGRESS.playCounts).some(n=>n>=3)},
-  {icon:'🔥', name:'Consistency Champ', desc:'Play activities 15 times in total', check:()=>totalPlays()>=15},
-  {icon:'🏗️', name:'Hard Worker', desc:'Reach the maximum points on 3 different activities', check:()=>Object.values(PROGRESS.scores).filter(s=>s.score>=s.max && s.max>0).length>=3},
+/* ===================== BADGES (five-tier families) ===================== */
+// Each badge is now a family of 5 progressive tiers. Tier 1 keeps the
+// original milestone; tiers 2-5 raise the bar. See BADGE_FAMILIES below —
+// `metric()` reads live PROGRESS and returns the current count for that
+// family, compared against each tier's `threshold`.
+const BADGE_FAMILIES = [
+  { id:'explorer', label:'Bible Explorer', unit:'weeks fully completed',
+    metric:()=>Object.values(PROGRESS.completed).filter(w=>Object.keys(w).length>=4).length,
+    tiers:[
+      {name:'Explorer I',   icon:'📖',  threshold:1},
+      {name:'Explorer II',  icon:'🗺️', threshold:3},
+      {name:'Explorer III', icon:'🧭',  threshold:6},
+      {name:'Explorer IV',  icon:'🌟',  threshold:10},
+      {name:'Explorer V',   icon:'🏆',  threshold:15},
+    ]},
+  { id:'verse', label:'Verse Keeper', unit:'memory-verse challenges',
+    metric:()=>Object.values(PROGRESS.completed).filter(w=>w.memory).length,
+    tiers:[
+      {name:'Verse Keeper I',   icon:'📜', threshold:2},
+      {name:'Verse Keeper II',  icon:'📖', threshold:5},
+      {name:'Verse Keeper III', icon:'⭐', threshold:10},
+      {name:'Verse Keeper IV',  icon:'🛡️', threshold:20},
+      {name:'Verse Keeper V',   icon:'👑', threshold:35},
+    ]},
+  { id:'detective', label:'Bible Detective', unit:"'Who am I?' clues correct",
+    metric:()=>PROGRESS.whoAmICorrect||0,
+    tiers:[
+      {name:'Detective I',   icon:'🔎', threshold:5},
+      {name:'Detective II',  icon:'🕵️', threshold:15},
+      {name:'Detective III', icon:'🔍', threshold:30},
+      {name:'Detective IV',  icon:'🧩', threshold:50},
+      {name:'Detective V',   icon:'🏅', threshold:75},
+    ]},
+  { id:'wordsearch', label:'Word Search Star', unit:'word searches completed',
+    metric:()=>Object.values(PROGRESS.completed).filter(w=>w.wordsearch).length,
+    tiers:[
+      {name:'Word Search Starter',  icon:'🔤', threshold:1},
+      {name:'Word Search Scout',    icon:'⭐', threshold:3},
+      {name:'Word Search Star',     icon:'🌟', threshold:7},
+      {name:'Word Search Master',   icon:'🏆', threshold:15},
+      {name:'Word Search Champion', icon:'👑', threshold:25},
+    ]},
+  { id:'shepherd', label:'Shepherd Friend', unit:'adventure points',
+    metric:()=>PROGRESS.points||0,
+    tiers:[
+      {name:'Shepherd Friend I',   icon:'🐑',  threshold:100},
+      {name:'Shepherd Friend II',  icon:'🌿',  threshold:250},
+      {name:'Shepherd Friend III', icon:'🐑⭐', threshold:500},
+      {name:'Shepherd Friend IV',  icon:'🏞️',  threshold:1000},
+      {name:'Shepherd Friend V',   icon:'👑',  threshold:2000},
+    ]},
+  { id:'diligent', label:'Diligent Learner', unit:'plays of one activity',
+    metric:()=>Object.values(PROGRESS.playCounts||{}).reduce((m,n)=>Math.max(m,n),0),
+    tiers:[
+      {name:'Diligent Learner I',   icon:'💪', threshold:3},
+      {name:'Diligent Learner II',  icon:'🔁', threshold:5},
+      {name:'Diligent Learner III', icon:'📚', threshold:10},
+      {name:'Diligent Learner IV',  icon:'🔥', threshold:20},
+      {name:'Diligent Learner V',   icon:'🏆', threshold:30},
+    ]},
+  { id:'consistency', label:'Consistency Champ', unit:'activities played',
+    metric:()=>totalPlays(),
+    tiers:[
+      {name:'Consistency Champ I',   icon:'🔥',  threshold:15},
+      {name:'Consistency Champ II',  icon:'📅',  threshold:30},
+      {name:'Consistency Champ III', icon:'🔥⭐', threshold:60},
+      {name:'Consistency Champ IV',  icon:'🏅',  threshold:100},
+      {name:'Consistency Champ V',   icon:'👑',  threshold:150},
+    ]},
+  { id:'hardworker', label:'Hard Worker', unit:'activities maxed out',
+    metric:()=>Object.values(PROGRESS.scores||{}).filter(s=>s.score>=s.max && s.max>0).length,
+    tiers:[
+      {name:'Hard Worker I',   icon:'🏗️', threshold:3},
+      {name:'Hard Worker II',  icon:'💪', threshold:5},
+      {name:'Hard Worker III', icon:'⭐', threshold:8},
+      {name:'Hard Worker IV',  icon:'🏆', threshold:12},
+      {name:'Hard Worker V',   icon:'👑', threshold:18},
+    ]},
 ];
-function countBadges(){ return BADGE_DEFS.filter(b=>b.check()).length; }
+// Highest tier reached for a family: 0 (none yet) through 5 (all tiers).
+function familyEarnedTier(fam){
+  const val = fam.metric();
+  let t = 0;
+  for(let i=0;i<fam.tiers.length;i++){ if(val>=fam.tiers[i].threshold) t=i+1; }
+  return t;
+}
+function countBadges(){ return BADGE_FAMILIES.reduce((s,f)=>s+familyEarnedTier(f),0); }
 function renderBadges(){
   const el=document.getElementById('badges');
   el.innerHTML=`<h1>My badges and progress</h1>
     <div class="card"><h2>🌟 My adventure progress</h2>
     <div class="progress"><div style="width:${Math.min(100,PROGRESS.points||0)}%"></div></div>
-    <p><strong>${PROGRESS.points||0} points</strong> earned so far · ${totalPlays()} activities played</p>
+    <p><strong>${PROGRESS.points||0} points</strong> earned so far · ${totalPlays()} activities played · <strong>${countBadges()}</strong> / ${BADGE_FAMILIES.length*5} tiers earned</p>
     <p class="muted">Points are banked per activity up to its maximum, so replaying a finished game won't add more points — but every replay counts toward the diligence, consistency and hard work badges below.</p></div>
-    <div class="badge-row" style="margin-top:16px">
-      ${BADGE_DEFS.map(b=>{const earned=b.check(); return `<div class="badge ${earned?'':'locked'}"><div class="big">${b.icon}</div><strong>${esc(b.name)}</strong><div class="muted">${esc(b.desc)}</div></div>`;}).join('')}
+    ${BADGE_FAMILIES.map(fam=>{
+      const earned = familyEarnedTier(fam);
+      const val = fam.metric();
+      const current = earned>0 ? fam.tiers[earned-1] : null;
+      const maxed = earned>=fam.tiers.length;
+      const next = !maxed ? fam.tiers[earned] : null;
+      const pct = next ? Math.max(2,Math.min(100, Math.round(val/next.threshold*100))) : 100;
+      return `<div class="card badge-family">
+        <div class="badge-family-head">
+          <div class="big">${current?current.icon:fam.tiers[0].icon}</div>
+          <div>
+            <strong>${current?esc(current.name):esc(fam.label)+' — not started yet'}</strong>
+            <div class="muted">${esc(fam.label)}</div>
+          </div>
+        </div>
+        <div class="progress" style="margin-top:10px"><div style="width:${pct}%"></div></div>
+        <p class="muted" style="margin:4px 0 0">${maxed
+          ? `🎉 All 5 tiers earned!`
+          : `${val} / ${next.threshold} ${esc(fam.unit)} toward ${esc(next.name)}`}</p>
+        <div class="badge-row" style="margin-top:10px">
+          ${fam.tiers.map((t,i)=>`<div class="badge tier ${i<earned?'':'locked'}" title="${esc(t.name)}: ${t.threshold} ${esc(fam.unit)}">
+            <div class="big">${t.icon}</div><span class="tier-label">${i+1}</span>
+          </div>`).join('')}
+        </div>
+      </div>`;
+    }).join('')}`;
+}
+
+/* ===================== LEADERBOARD (top 5, all children) ===================== */
+async function renderLeaderboard(){
+  const el = document.getElementById('leaderboard');
+  const token = renderToken;
+  el.innerHTML = `<h1>🏆 Leaderboard</h1><div class="card"><p class="muted">Loading the top adventurers…</p></div>`;
+  let all = {};
+  try{ all = await fetchAllProgress(); }catch(e){ /* fall through with empty results */ }
+  if(token !== renderToken) return; // a newer screen loaded while we were fetching
+  const ranked = PROFILES
+    .map(p=>({p, points:(all[p.id] && all[p.id].points) || 0}))
+    .sort((a,b)=>b.points-a.points)
+    .slice(0,5);
+  const medals = ['🥇','🥈','🥉'];
+  el.innerHTML = `<h1>🏆 Leaderboard</h1>
+    <div class="card">
+      <h2>Top 5 Bible Adventurers</h2>
+      <p class="muted">Ranked by adventure points earned across every lesson. Keep reading, playing and remembering to climb the list!</p>
+      ${ranked.length===0 ? `<p class="muted">No one has earned points yet — be the first!</p>` :
+        ranked.map((r,i)=>`<div class="leader-row ${i===0?'rank-1':''}">
+          <div class="leader-rank">${medals[i]||('#'+(i+1))}</div>
+          <div style="font-size:24px">${AGE_GROUPS[r.p.ageGroup]?.emoji||'🐑'}</div>
+          <div><div class="leader-name">${esc(r.p.name||'(no name)')}</div><div class="muted" style="font-size:11.5px">${esc(AGE_GROUPS[r.p.ageGroup]?.label||'')}</div></div>
+          <div class="leader-points">⭐ ${r.points}</div>
+        </div>`).join('')}
     </div>`;
 }
 
