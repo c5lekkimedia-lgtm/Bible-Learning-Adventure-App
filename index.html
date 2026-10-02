@@ -1207,11 +1207,11 @@ async function renderLeaderboard(){
   const ranked = PROFILES
     .map(p=>({p, points:(all[p.id] && all[p.id].points) || 0}))
     .sort((a,b)=>b.points-a.points)
-    .slice(0,5);
+    .slice(0,10);
   const medals = ['🥇','🥈','🥉'];
   el.innerHTML = `<h1>🏆 Leaderboard</h1>
     <div class="card">
-      <h2>Top 5 Bible Adventurers</h2>
+      <h2>Top 10 Bible Adventurers</h2>
       <p class="muted">Ranked by adventure points earned across every lesson. Keep reading, playing and remembering to climb the list!</p>
       ${ranked.length===0 ? `<p class="muted">No one has earned points yet — be the first!</p>` :
         ranked.map((r,i)=>`<div class="leader-row ${i===0?'rank-1':''}">
