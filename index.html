@@ -194,9 +194,35 @@
     .lesson-banner .banner-text h2{font-size:21px}
   }
   @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+  #printArea{display:none}
+  .print-page{font-family:Georgia,'Times New Roman',serif;padding:10px;text-align:center;color:#222}
+  .print-page h1{font-size:20px;margin:0 0 2px}
+  .print-sub{color:#555;font-size:13px;margin:0 0 16px}
+  .print-ws-grid{border-collapse:collapse;margin:0 auto}
+  .print-ws-grid td{border:1px solid #333;width:28px;height:28px;text-align:center;vertical-align:middle;
+    font-family:'Courier New',monospace;font-weight:700;font-size:15px;text-transform:uppercase}
+  .print-wordlist{font-size:14.5px;letter-spacing:.5px;margin-top:8px;line-height:1.8}
+  .print-footer{margin-top:28px;font-size:11px;color:#888}
+  @media print{
+    body *{visibility:hidden}
+    #printArea, #printArea *{visibility:visible}
+    #printArea{display:block !important;position:absolute;top:0;left:0;width:100%}
+  }
+  .color-palette{display:flex;gap:9px;flex-wrap:wrap;margin:12px 0}
+  .color-swatch{width:32px;height:32px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1.5px #D8C4EE;
+    cursor:pointer;padding:0}
+  .color-swatch.selected{box-shadow:0 0 0 3px var(--purple)}
+  .coloring-canvas-wrap{max-width:100%;overflow:auto;text-align:center;background:#f2ede6;border-radius:14px;
+    padding:10px;border:1px solid var(--border)}
+  #coloringCanvas{max-width:100%;height:auto;touch-action:none;border-radius:8px;background:#fff;cursor:crosshair}
+  .tool-btn.active{background:var(--purple) !important;color:#fff !important;border-color:var(--purple) !important}
+  .coloring-gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px}
+  .coloring-card{background:white;border:1px solid var(--border);border-radius:14px;padding:10px;text-align:center}
+  .coloring-card img{width:100%;border-radius:8px;border:1px solid var(--border);margin-bottom:6px}
 </style>
 </head>
 <body>
+<div id="printArea"></div>
 <div id="configScreen" class="config-banner" style="display:none"></div>
 <div id="profileModal" class="modal-overlay hidden"><div class="modal-card" id="profileModalInner"></div></div>
 <div class="app" id="appRoot" style="display:none">
@@ -715,6 +741,7 @@ function renderActivityScreen(){
   const l = getLesson(currentLessonId);
   const types = [['quiz','🧠 Bible quiz'],['wordsearch','🔤 Word search'],['unscramble','🔀 Unscramble'],['memory','📜 Memory verse'],['whoami','🔎 Who am I?']];
   if(l.chooseBetter) types.push(['choose','💎 Choose the treasure']);
+  if(l.coloringImage) types.push(['coloring','🎨 Coloring page']);
   if(ageKey()==='3-5') types.splice(1,0,['count','🔢 Counting fun']);
   if(ageKey()==='10-12') types.push(['deeper','🧭 Deeper dive']);
   if(!types.some(t=>t[0]===currentActivity)) currentActivity='quiz';
@@ -739,6 +766,7 @@ function renderActivityContent(){
   if(currentActivity==='choose') return renderChooseBetter(l, box);
   if(currentActivity==='count') return renderCounting(l, box);
   if(currentActivity==='deeper') return renderDeeperDive(l, box);
+  if(currentActivity==='coloring') return renderColoring(l, box);
 }
 function bankedLine(lessonId, type, max){
   const banked = (PROGRESS.scores[lessonId+':'+type]||{score:0}).score;
@@ -787,7 +815,7 @@ function answerQuiz(el, chosenText, correctText){
 }
 
 /* ---- Word search ---- */
-let wsWords=[], wsFound=new Set(), wsSelecting=null, wsWordPoolLen=0;
+let wsWords=[], wsFound=new Set(), wsSelecting=null, wsWordPoolLen=0, wsBuiltGrid=null, wsBuiltSize=0;
 function buildWordSearch(words, size, dirs){
   const grid = Array.from({length:size},()=>Array(size).fill(''));
   const placed = [];
@@ -818,10 +846,15 @@ function renderWordSearch(l, box){
   if(!wordPool.length) wordPool = l.vocabulary.slice(0,3).map(w=>w.slice(0,size));
   const built = buildWordSearch(wordPool, size, dirs);
   wsWords = built.placed; const listed = built.placed.map(p=>p.word); wsWordPoolLen = listed.length;
+  wsBuiltGrid = built.grid; wsBuiltSize = size;
   wsFound = new Set(); wsSelecting=null;
   box.innerHTML = `<h2>🔤 Word search</h2><p class="muted">Tap the first letter of a word, then tap its last letter.</p>
     <div class="grid-scroll"><div class="word-grid" id="wsGridEl" style="grid-template-columns:repeat(${size},${cell}px)"></div></div>
     <div class="wordlist" id="wsWordlist">${listed.map(w=>`<span id="wsw-${w}">${esc(w)}</span>`).join('')}</div>
+    <div class="toolbar">
+      <button class="btn secondary" onclick="printWordSearch(false)">🖨️ Print worksheet</button>
+      <button class="btn secondary" onclick="printWordSearch(true)">🖨️ Print answer key</button>
+    </div>
     <div id="wsFeedback" class="feedback" role="status"></div><div id="wsDone"></div>`;
   const gridEl = document.getElementById('wsGridEl');
   for(let r=0;r<size;r++) for(let c=0;c<size;c++){
@@ -850,6 +883,214 @@ function wsClick(r,c){
   } else { fb.textContent='Nice find! Keep going.'; fb.style.color='#1E8A4C'; }
 }
 function markSel(r,c,on){ const cell=document.querySelector(`.letter[data-r="${r}"][data-c="${c}"]`); if(cell) cell.classList.toggle('sel',on); }
+function printWordSearch(withAnswers){
+  if(!wsBuiltGrid) return;
+  const l = getLesson(currentLessonId);
+  const inWord = (r,c)=> wsWords.some(p=>{
+    for(let i=0;i<p.word.length;i++){ if(p.r0+p.dir[0]*i===r && p.c0+p.dir[1]*i===c) return true; }
+    return false;
+  });
+  const rowsHTML = wsBuiltGrid.map((row,r)=>`<tr>${row.map((ch,c)=>
+    `<td${withAnswers && inWord(r,c) ? ' style="background:#FFE9A8"' : ''}>${esc(ch)}</td>`
+  ).join('')}</tr>`).join('');
+  const words = wsWords.map(p=>p.word);
+  document.getElementById('printArea').innerHTML = `<div class="print-page">
+    <h1>🌟 Bible Adventure — Word Search</h1>
+    <p class="print-sub">${esc(l?.topic||'')}${l?.date?' · '+esc(l.date):''}${withAnswers?' — Answer key':''}</p>
+    <table class="print-ws-grid">${rowsHTML}</table>
+    <h3>Find these words:</h3>
+    <p class="print-wordlist">${words.map(esc).join('&nbsp;&nbsp;•&nbsp;&nbsp;')}</p>
+    <p class="print-footer">The Covenant Nation Lekki — Bible Adventure Sunday School</p>
+  </div>`;
+  window.print();
+}
+
+/* ---- Coloring page ---- */
+const COLOR_PALETTE = ['#E63946','#F3722C','#F9C74F','#90BE6D','#43AA8B','#577590',
+  '#277DA1','#9D4EDD','#F72585','#FFFFFF','#8D6E63','#2B2B2B'];
+let coloringCtx=null, coloringTool='brush', coloringColor='#E63946', coloringBrushSize=14, coloringDrawing=false;
+async function renderColoring(l, box){
+  if(!l.coloringImage){ box.innerHTML='<p class="muted">No coloring page has been added for this lesson yet.</p>'; return; }
+  const token = renderToken;
+  box.innerHTML = `<h2>🎨 Coloring page</h2><p class="muted">Pick a color, then paint with the brush or tap inside a shape to fill it.</p>
+    <div class="color-palette" id="colorPalette"></div>
+    <div class="toolbar">
+      <button class="btn secondary tool-btn" id="toolBrush" onclick="setColoringTool('brush')">🖌️ Brush</button>
+      <button class="btn secondary tool-btn" id="toolFill" onclick="setColoringTool('fill')">🪣 Fill</button>
+      <span class="muted" style="align-self:center">Size:</span>
+      <button class="btn secondary" onclick="setBrushSize(6)">S</button>
+      <button class="btn secondary" onclick="setBrushSize(14)">M</button>
+      <button class="btn secondary" onclick="setBrushSize(26)">L</button>
+    </div>
+    <div class="coloring-canvas-wrap"><canvas id="coloringCanvas"></canvas></div>
+    <div class="toolbar">
+      <button class="btn" onclick="saveColoring('${l.id}')">💾 Save my coloring</button>
+      <button class="btn secondary" onclick="resetColoring('${l.id}')">↩️ Clear / start over</button>
+      <button class="btn secondary" onclick="printColoring()">🖨️ Print blank page</button>
+    </div>
+    <div id="colorSaveMsg" class="feedback" role="status"></div>`;
+  const pal = document.getElementById('colorPalette');
+  COLOR_PALETTE.forEach(c=>{
+    const b=document.createElement('button'); b.type='button';
+    b.className='color-swatch'+(c.toLowerCase()===coloringColor.toLowerCase()?' selected':'');
+    b.style.background=c; b.title=c; b.onclick=()=>selectColor(c,b); pal.appendChild(b);
+  });
+  updateToolButtons();
+  const canvas = document.getElementById('coloringCanvas');
+  coloringCtx = canvas.getContext('2d', {willReadFrequently:true});
+  let src = l.coloringImage;
+  if(activeProfileId && dbReady){
+    try{
+      const snap = await getDoc(doc(db,'colorings', activeProfileId+'_'+l.id));
+      if(token!==renderToken) return; // navigated away while loading
+      if(snap.exists() && snap.data().image) src = snap.data().image;
+    }catch(e){ /* fall back to the blank template */ }
+  }
+  if(token!==renderToken) return;
+  await loadImageToCanvas(canvas, src);
+  if(token!==renderToken) return;
+  attachCanvasHandlers(canvas);
+}
+function updateToolButtons(){
+  const b=document.getElementById('toolBrush'), f=document.getElementById('toolFill');
+  if(b) b.classList.toggle('active', coloringTool==='brush');
+  if(f) f.classList.toggle('active', coloringTool==='fill');
+}
+function setColoringTool(t){ coloringTool=t; updateToolButtons(); }
+function setBrushSize(s){ coloringBrushSize=s; }
+function selectColor(c, btn){
+  coloringColor=c;
+  document.querySelectorAll('.color-swatch').forEach(s=>s.classList.remove('selected'));
+  if(btn) btn.classList.add('selected');
+}
+function loadImageToCanvas(canvas, src){
+  return new Promise(resolve=>{
+    const img = new Image();
+    img.onload = ()=>{
+      const MAX=640; const scale=Math.min(1, MAX/img.width);
+      canvas.width=Math.round(img.width*scale); canvas.height=Math.round(img.height*scale);
+      coloringCtx.fillStyle='#fff'; coloringCtx.fillRect(0,0,canvas.width,canvas.height);
+      coloringCtx.drawImage(img,0,0,canvas.width,canvas.height);
+      resolve();
+    };
+    img.onerror=()=>resolve();
+    img.src=src;
+  });
+}
+function attachCanvasHandlers(canvas){
+  canvas.onpointerdown=e=>{
+    e.preventDefault();
+    const pos=canvasPos(canvas,e);
+    if(coloringTool==='fill'){ floodFill(pos.x,pos.y,coloringColor); }
+    else{ coloringDrawing=true; paintDot(pos.x,pos.y); }
+  };
+  canvas.onpointermove=e=>{
+    if(!coloringDrawing || coloringTool!=='brush') return;
+    e.preventDefault();
+    const pos=canvasPos(canvas,e); paintDot(pos.x,pos.y);
+  };
+  const stop=()=>{ coloringDrawing=false; };
+  canvas.onpointerup=stop; canvas.onpointerleave=stop; canvas.onpointercancel=stop;
+}
+function canvasPos(canvas,e){
+  const rect=canvas.getBoundingClientRect();
+  const scaleX=canvas.width/rect.width, scaleY=canvas.height/rect.height;
+  return { x:Math.floor((e.clientX-rect.left)*scaleX), y:Math.floor((e.clientY-rect.top)*scaleY) };
+}
+function paintDot(x,y){
+  if(!coloringCtx) return;
+  coloringCtx.fillStyle=coloringColor;
+  coloringCtx.beginPath();
+  coloringCtx.arc(x,y,coloringBrushSize/2,0,Math.PI*2);
+  coloringCtx.fill();
+}
+function hexToRgb(hex){
+  const v=hex.replace('#','');
+  return [parseInt(v.substring(0,2),16),parseInt(v.substring(2,4),16),parseInt(v.substring(4,6),16)];
+}
+function floodFill(x,y,hex){
+  const canvas=document.getElementById('coloringCanvas');
+  const w=canvas.width,h=canvas.height;
+  if(x<0||y<0||x>=w||y>=h||!coloringCtx) return;
+  const imgData=coloringCtx.getImageData(0,0,w,h);
+  const data=imgData.data;
+  const startIdx=(y*w+x)*4;
+  const startR=data[startIdx],startG=data[startIdx+1],startB=data[startIdx+2];
+  const [fr,fg,fb]=hexToRgb(hex);
+  if(Math.abs(startR-fr)<10 && Math.abs(startG-fg)<10 && Math.abs(startB-fb)<10) return; // already this color
+  const tolerance=48, toleranceSq=tolerance*tolerance;
+  const stack=[x,y]; const visited=new Uint8Array(w*h);
+  while(stack.length){
+    const cy=stack.pop(), cx=stack.pop();
+    if(cx<0||cy<0||cx>=w||cy>=h) continue;
+    const vIdx=cy*w+cx; if(visited[vIdx]) continue;
+    const i=vIdx*4;
+    const dr=data[i]-startR, dg=data[i+1]-startG, db=data[i+2]-startB;
+    if((dr*dr+dg*dg+db*db) > toleranceSq) continue;
+    visited[vIdx]=1;
+    data[i]=fr; data[i+1]=fg; data[i+2]=fb; data[i+3]=255;
+    stack.push(cx+1,cy, cx-1,cy, cx,cy+1, cx,cy-1);
+  }
+  coloringCtx.putImageData(imgData,0,0);
+}
+function resetColoring(lessonId){
+  if(!confirm('Clear your coloring and start over from the blank page?')) return;
+  const l=getLesson(lessonId);
+  loadImageToCanvas(document.getElementById('coloringCanvas'), l.coloringImage);
+}
+async function saveColoring(lessonId){
+  if(!activeProfileId){ alert('Pick a profile first.'); return; }
+  const msg=document.getElementById('colorSaveMsg');
+  const canvas=document.getElementById('coloringCanvas');
+  if(!canvas){ return; }
+  let out=canvas.toDataURL('image/jpeg',0.8);
+  if(kb(out)>600) out=canvas.toDataURL('image/jpeg',0.6);
+  if(kb(out)>600) out=canvas.toDataURL('image/jpeg',0.4);
+  msg.textContent='Saving…'; msg.style.color='#6B6178';
+  const profile = PROFILES.find(p=>p.id===activeProfileId);
+  try{
+    if(dbReady){
+      await setDoc(doc(db,'colorings', activeProfileId+'_'+lessonId), {
+        profileId: activeProfileId, childName: (profile&&profile.name)||'', lessonId,
+        image: out, savedAt: Date.now()
+      });
+    }
+    recordActivityScore(lessonId,'coloring', 20, 20, true);
+    msg.textContent='🎉 Saved! Your teacher can see your coloring.'; msg.style.color='#1E8A4C';
+  }catch(e){ console.error(e); msg.textContent='Could not save right now — check the connection and try again.'; msg.style.color='#A32B2B'; }
+}
+function printColoring(){
+  const l = getLesson(currentLessonId);
+  if(!l || !l.coloringImage) return;
+  document.getElementById('printArea').innerHTML = `<div class="print-page">
+    <h1>🌟 Bible Adventure — Coloring Page</h1>
+    <p class="print-sub">${esc(l.topic||'')}</p>
+    <img src="${l.coloringImage}" alt="Coloring page outline" style="max-width:100%;border:1px solid #333">
+    <p class="print-footer">The Covenant Nation Lekki — Bible Adventure Sunday School</p>
+  </div>`;
+  window.print();
+}
+async function fetchAllColorings(){
+  if(!dbReady) return [];
+  const snap = await getDocs(collection(db,'colorings'));
+  return snap.docs.map(d=>({id:d.id, ...d.data()}));
+}
+async function renderColoringsGallery(){
+  const items = await fetchAllColorings();
+  items.sort((a,b)=>(b.savedAt||0)-(a.savedAt||0));
+  if(!items.length) return `<p class="muted">No coloring pages have been saved yet.</p>`;
+  return `<div class="coloring-gallery">
+    ${items.map(it=>{
+      const lesson = getLesson(it.lessonId);
+      return `<div class="coloring-card">
+        <img src="${it.image}" alt="Coloring by ${esc(it.childName||'a child')}">
+        <strong>${esc(it.childName||'(no name)')}</strong>
+        <div class="muted">${esc(lesson?lesson.topic:'Lesson removed')}</div>
+        <div class="muted" style="font-size:11px">${esc(relativeTime(it.savedAt))}</div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
 
 /* ---- Unscramble ---- */
 let uWordIndex=0, uWords=[];
@@ -1258,7 +1499,7 @@ if(dbReady){
 
 /* ===================== TEACHER DASHBOARD ===================== */
 let editingLessonId=null, teacherCharacters=[{name:'',clue:''}], teacherCharactersInitializedFor='unset';
-let teacherSection='dashboard', draftImage=null;
+let teacherSection='dashboard', draftImage=null, draftColoringImage=null;
 let flashMessage=null; // one-shot banner shown at the top of whichever teacher screen renders next
 
 function renderCharacterRows(){
@@ -1289,9 +1530,12 @@ function renderCharacterSummary(){
 }
 function addCharacterRow(){ teacherCharacters.push({name:'',clue:''}); renderCharacterRows(); }
 function removeCharacterRow(i){ teacherCharacters.splice(i,1); if(!teacherCharacters.length) teacherCharacters=[{name:'',clue:''}]; renderCharacterRows(); }
-function cancelEdit(){ editingLessonId=null; teacherCharactersInitializedFor='unset'; draftImage=null; teacherSection='lessons'; renderTeacher(); }
-function teacherTab(name){ teacherSection=name; editingLessonId=null; teacherCharactersInitializedFor='unset'; draftImage=null; flashMessage=null; renderTeacher(); }
-function teacherEdit(id){ editingLessonId=id; teacherSection='editor'; teacherCharactersInitializedFor='unset'; draftImage = id ? (lessonImage(getLesson(id))||null) : null; flashMessage=null; renderTeacher(); }
+function cancelEdit(){ editingLessonId=null; teacherCharactersInitializedFor='unset'; draftImage=null; draftColoringImage=null; teacherSection='lessons'; renderTeacher(); }
+function teacherTab(name){ teacherSection=name; editingLessonId=null; teacherCharactersInitializedFor='unset'; draftImage=null; draftColoringImage=null; flashMessage=null; renderTeacher(); }
+function teacherEdit(id){ editingLessonId=id; teacherSection='editor'; teacherCharactersInitializedFor='unset';
+  draftImage = id ? (lessonImage(getLesson(id))||null) : null;
+  draftColoringImage = id ? ((getLesson(id)||{}).coloringImage || null) : null;
+  flashMessage=null; renderTeacher(); }
 function teacherPreview(id){ if(id) currentLessonId=id; go('lesson'); }
 async function deleteLesson(id){
   const l=getLesson(id); if(!confirm('Delete "'+(l?l.topic:'this lesson')+'"? This cannot be undone.')) return;
@@ -1401,6 +1645,50 @@ function renderImageField(){
       <label class="btn" style="cursor:pointer">Choose image<input type="file" accept="image/*" style="display:none" onchange="handleImageFile(this)"></label>
       <div id="imgNote" class="img-meta"></div></div>`;
 }
+function handleColoringFile(input){
+  const file = input.files && input.files[0]; if(!file) return;
+  const note = document.getElementById('colorImgNote');
+  if(!/^image\//.test(file.type)){ note.textContent='That file is not an image. Choose a JPG, PNG or WebP.'; return; }
+  note.textContent='Preparing image…';
+  const reader = new FileReader();
+  reader.onload = e=>{
+    const img = new Image();
+    img.onload = ()=>{
+      // PNG (lossless) keeps outlines crisp for the flood-fill tool — unlike
+      // the JPEG lesson photo above, this must not introduce compression noise.
+      const makeOut = (max)=>{
+        const scale=Math.min(1, max/img.width);
+        const canvas=document.createElement('canvas'); canvas.width=Math.round(img.width*scale); canvas.height=Math.round(img.height*scale);
+        const ctx=canvas.getContext('2d'); ctx.fillStyle='#fff'; ctx.fillRect(0,0,canvas.width,canvas.height); ctx.drawImage(img,0,0,canvas.width,canvas.height);
+        return canvas.toDataURL('image/png');
+      };
+      let out = makeOut(900);
+      if(kb(out)>500) out = makeOut(650);
+      if(kb(out)>500) out = makeOut(450);
+      if(kb(out)>500) note.textContent='This image is still quite large after shrinking — a simpler black-and-white outline will work best.';
+      draftColoringImage=out; renderColoringField();
+    };
+    img.onerror=()=>{ note.textContent='That image could not be read. Try a different file.'; };
+    img.src=e.target.result;
+  };
+  reader.onerror=()=>{ note.textContent='That image could not be read. Try a different file.'; };
+  reader.readAsDataURL(file);
+}
+function removeDraftColoringImage(){ draftColoringImage=null; renderColoringField(); }
+function renderColoringField(){
+  const wrap=document.getElementById('colorField'); if(!wrap) return;
+  wrap.innerHTML = draftColoringImage ? `
+    <img class="img-preview" src="${draftColoringImage}" alt="Coloring page preview">
+    <div class="img-meta">About ${kb(draftColoringImage)} KB — a simple black-outline picture colors best.</div>
+    <div class="toolbar">
+      <label class="btn secondary" style="cursor:pointer">Replace image<input type="file" accept="image/*" style="display:none" onchange="handleColoringFile(this)"></label>
+      <button class="btn danger" onclick="removeDraftColoringImage()">Remove coloring page</button>
+    </div><div id="colorImgNote" class="img-meta"></div>` : `
+    <div class="img-drop"><div style="font-size:30px">🎨</div>
+      <p class="muted" style="margin:6px 0 12px">Add a black-outline coloring page for this lesson (optional).</p>
+      <label class="btn" style="cursor:pointer">Choose image<input type="file" accept="image/*" style="display:none" onchange="handleColoringFile(this)"></label>
+      <div id="colorImgNote" class="img-meta"></div></div>`;
+}
 function teacherEditor(){
   const editing = editingLessonId ? getLesson(editingLessonId) : null;
   if(teacherCharactersInitializedFor!==editingLessonId){
@@ -1414,6 +1702,7 @@ function teacherEditor(){
     <span class="status ${lessonStatusClass(status)}">${esc(status)}</span></div>
   <div class="banner warn" id="teacherBanner" style="display:none"></div>
   <label class="field">Lesson picture</label><div id="imgField"></div>
+  <label class="field">Coloring page outline (optional)</label><div id="colorField"></div>
   <div class="grid grid2">
     <div><label class="field">Date</label><input class="input" id="tfDate" value="${esc(editing?.date||'')}" placeholder="Sunday, 4 October 2026"></div>
     <div><label class="field">Theme</label><input class="input" id="tfTheme" value="${esc(editing?.theme||'')}"></div>
@@ -1524,18 +1813,23 @@ function renderTeacher(){
   if(teacherSection==='progress') body=`
     <div class="section-head"><div><h1>Progress reports</h1><p class="muted">Engagement and activity summary.</p></div></div>
     <div id="reportsCard"><p class="muted">Loading…</p></div>`;
+  if(teacherSection==='colorings') body=`
+    <div class="section-head"><div><h1>Children's coloring pages</h1><p class="muted">Every saved coloring, across all lessons and children.</p></div></div>
+    <div id="coloringsCard"><p class="muted">Loading…</p></div>`;
   if(teacherSection==='settings') body=teacherSettings();
   el.innerHTML=`<div class="teacher-nav">
     <button class="${teacherSection==='dashboard'?'selected':''}" onclick="teacherTab('dashboard')">🏠 Dashboard</button>
     <button class="${teacherSection==='lessons'?'selected':''}" onclick="teacherTab('lessons')">📚 Lessons</button>
     <button class="${teacherSection==='class'?'selected':''}" onclick="teacherTab('class')">👧 Class</button>
     <button class="${teacherSection==='progress'?'selected':''}" onclick="teacherTab('progress')">📊 Progress</button>
+    <button class="${teacherSection==='colorings'?'selected':''}" onclick="teacherTab('colorings')">🎨 Colorings</button>
     <button class="${teacherSection==='settings'?'selected':''}" onclick="teacherTab('settings')">⚙️ Settings</button>
     <span class="spacer"></span><button onclick="lockTeacher()">🔓 Log out</button>
   </div>${body}`;
-  if(teacherSection==='editor'){ renderCharacterRows(); renderImageField(); }
+  if(teacherSection==='editor'){ renderCharacterRows(); renderImageField(); renderColoringField(); }
   if(teacherSection==='class') buildEngagementTable().then(html=>{ const c=document.getElementById('classCard'); if(c) c.innerHTML=html; });
   if(teacherSection==='progress') teacherReports().then(html=>{ const c=document.getElementById('reportsCard'); if(c) c.innerHTML=html; });
+  if(teacherSection==='colorings') renderColoringsGallery().then(html=>{ const c=document.getElementById('coloringsCard'); if(c) c.innerHTML=html; });
 }
 function val(id){ const el=document.getElementById(id); return el?el.value.trim():''; }
 async function publishLesson(){
@@ -1549,6 +1843,7 @@ async function publishLesson(){
   const lessonObj = {
     date: val('tfDate') || 'Untitled week',
     image: draftImage || '',
+    coloringImage: draftColoringImage || '',
     status: val('tfStatus') || 'Published',
     theme: val('tfTheme') || topic,
     topic, reference: val('tfRef'),
@@ -1585,6 +1880,7 @@ async function publishLesson(){
     editingLessonId = null;
     teacherCharactersInitializedFor = 'unset';
     draftImage = null;
+    draftColoringImage = null;
     const savedBits = [];
     savedBits.push(lessonObj.quiz.length + ' quiz question' + (lessonObj.quiz.length===1?'':'s'));
     savedBits.push(lessonObj.characters.length + ' "Who am I?" character' + (lessonObj.characters.length===1?'':'s'));
@@ -1666,12 +1962,14 @@ Object.assign(window, {
   chooseProfile, saveProfileAndStart, removeProfile,
   attemptOpenProfile, childPinPress, childPinClear, pinBackToPicker, childPinSubmit, resetChildPin,
   getLesson, pickCurrentLesson,
-  answerQuiz, renderQuiz, wsClick, renderWordSearch, checkUnscramble, renderUnscramble,
+  answerQuiz, renderQuiz, wsClick, renderWordSearch, printWordSearch, checkUnscramble, renderUnscramble,
   mvPick, mvUnpick, mvReset, renderMemoryVerse, renderMemoryVerseFillBlank, renderMemoryVerseTyped, checkMvTyped,
   answerWhoAmI, renderWhoAmI, chooseTreasure, renderChooseBetter, renderCounting,
   showReflectSample, finishReflect, renderDeeperDive,
+  renderColoring, setColoringTool, setBrushSize, selectColor, saveColoring, resetColoring, printColoring,
   teacherLogin, lockTeacher, teacherTab, teacherEdit, teacherPreview, cancelEdit, deleteLesson,
   addCharacterRow, removeCharacterRow, handleImageFile, removeDraftImage,
+  handleColoringFile, removeDraftColoringImage,
   publishLesson, changePassword, seedStarterLessons
 });
 </script>
