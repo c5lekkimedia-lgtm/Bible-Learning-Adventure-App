@@ -215,6 +215,7 @@
   .coloring-canvas-wrap{max-width:100%;overflow:auto;text-align:center;background:#f2ede6;border-radius:14px;
     padding:10px;border:1px solid var(--border)}
   #coloringCanvas{max-width:100%;height:auto;touch-action:none;border-radius:8px;background:#fff;cursor:crosshair}
+  #coloringCanvas.zoomed{max-width:none}
   .tool-btn.active{background:var(--purple) !important;color:#fff !important;border-color:var(--purple) !important}
   .coloring-gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px}
   .coloring-card{background:white;border:1px solid var(--border);border-radius:14px;padding:10px;text-align:center}
@@ -230,9 +231,9 @@
     <div class="logo">🌟 BIBLE ADVENTURE<span>The Covenant Nation Lekki</span></div>
     <button class="profile-chip" id="profileChip" onclick="openProfileModal()"><span class="pc-emoji">🐑</span><span id="profileChipText">Set up profile</span></button>
     <nav id="mainNav">
-      <button class="active" data-screen="home" onclick="go('home',this)"><span class="navicon">🏠</span><span class="navlabel">Home</span></button>
-      <button data-screen="lesson" onclick="go('lesson',this)"><span class="navicon">📖</span><span class="navlabel">This Week</span></button>
-      <button data-screen="activity" onclick="go('activity',this)"><span class="navicon">🎮</span><span class="navlabel">Activities</span></button>
+      <button class="active" data-screen="home" onclick="navTo('home',this)"><span class="navicon">🏠</span><span class="navlabel">Home</span></button>
+      <button data-screen="lesson" onclick="navTo('lesson',this)"><span class="navicon">📖</span><span class="navlabel">This Week</span></button>
+      <button data-screen="activity" onclick="navTo('activity',this)"><span class="navicon">🎮</span><span class="navlabel">Activities</span></button>
       <button data-screen="badges" onclick="go('badges',this)"><span class="navicon">🏆</span><span class="navlabel">My Badges</span></button>
       <button data-screen="leaderboard" onclick="go('leaderboard',this)"><span class="navicon">📊</span><span class="navlabel">Leaderboard</span></button>
       <button data-screen="teacher" onclick="go('teacher',this)"><span class="navicon">🧑‍🏫</span><span class="navlabel">Teacher</span></button>
@@ -359,7 +360,11 @@ function watchLessons(){
   onSnapshot(q, snap=>{
     STATE.lessons = snap.docs.map(d=>({id:d.id, ...d.data()}));
     setSyncPill('ok');
-    if(!currentLessonId || !STATE.lessons.some(l=>l.id===currentLessonId)){
+    const current = currentLessonId ? STATE.lessons.find(l=>l.id===currentLessonId) : null;
+    const currentIsPublished = current && (current.status||'Published')==='Published';
+    // A teacher previewing a Draft/Review lesson is allowed to keep viewing
+    // it — only a child's own browsing gets swapped off a deactivated lesson.
+    if(!currentLessonId || (!currentIsPublished && !teacherPreviewMode)){
       const pick = pickCurrentLesson();
       currentLessonId = pick ? pick.id : null;
     }
@@ -375,6 +380,9 @@ function isEditingLessonScreen(){
   return !!(teacherScreen && teacherScreen.classList.contains('active') && teacherSection==='editor');
 }
 function getLesson(id){ return STATE.lessons.find(l=>l.id===id) || STATE.lessons[0] || null; }
+// Lessons children may browse/play. "Published" is the on position of the
+// teacher's activate/deactivate switch; Draft and Review are both off.
+function publishedLessons(){ return STATE.lessons.filter(l=>(l.status||'Published')==='Published'); }
 function parseLessonDate(s){ const t = Date.parse(String(s||'').replace(/^[A-Za-z]+,\s*/,'')); return isNaN(t)?null:t; }
 function pickCurrentLesson(){
   if(!STATE.lessons.length) return null;
@@ -646,8 +654,10 @@ function go(id, btn){
   if(id==='teacher') renderTeacherGate();
   window.scrollTo({top:0, behavior:'instant'});
 }
-function openLesson(id){ currentLessonId=id; go('lesson'); }
-function openLessonActivities(id){ currentLessonId=id; currentActivity='quiz'; go('activity'); }
+let teacherPreviewMode = false;
+function navTo(id, btn){ teacherPreviewMode=false; go(id, btn); }
+function openLesson(id){ teacherPreviewMode=false; currentLessonId=id; go('lesson'); }
+function openLessonActivities(id){ teacherPreviewMode=false; currentLessonId=id; currentActivity='quiz'; go('activity'); }
 
 function bannerFor(l){
   const img = lessonImage(l);
@@ -665,9 +675,11 @@ function bannerFor(l){
 /* ===================== HOME ===================== */
 function renderHome(){
   const el = document.getElementById('home');
-  if(!STATE.lessons.length){ el.innerHTML = `<div class="banner warn">No lessons have been published yet. Sign in as a teacher to add the first one.</div>`; return; }
+  const visible = publishedLessons();
+  if(!visible.length){ el.innerHTML = `<div class="banner warn">No lessons have been published yet. Sign in as a teacher to add the first one.</div>`; return; }
   const weeksDone = STATE.lessons.filter(l => PROGRESS.completed[l.id] && Object.keys(PROGRESS.completed[l.id]).length>=3).length;
-  const l0 = currentLessonId ? getLesson(currentLessonId) : pickCurrentLesson();
+  let l0 = currentLessonId ? getLesson(currentLessonId) : null;
+  if(!l0 || (l0.status||'Published')!=='Published') l0 = pickCurrentLesson();
   const activeP = getActiveProfile();
   const greetName = (activeP && activeP.name) ? activeP.name : 'Bible Explorer';
   const img = lessonImage(l0);
@@ -687,11 +699,11 @@ function renderHome(){
       <div class="card"><div class="icon">⭐</div><div class="stat">${PROGRESS.points||0}</div><div class="muted">Adventure points</div></div>
       <div class="card"><div class="icon">🏅</div><div class="stat">${countBadges()}</div><div class="muted">Badges earned</div></div>
       <div class="card"><div class="icon">📖</div><div class="stat">${weeksDone}</div><div class="muted">Weeks completed</div></div>
-      <div class="card"><div class="icon">🎮</div><div class="stat">${STATE.lessons.length}</div><div class="muted">Adventures available</div></div>
+      <div class="card"><div class="icon">🎮</div><div class="stat">${visible.length}</div><div class="muted">Adventures available</div></div>
     </div>
     <h2 style="margin-top:22px">All Bible adventures</h2>
     <div class="grid grid3">
-      ${STATE.lessons.map(l => { const thumb=lessonImage(l); return `
+      ${visible.map(l => { const thumb=lessonImage(l); return `
         <button class="week-card" onclick="openLesson('${l.id}')">
           ${thumb?`<img class="week-thumb" src="${thumb}" alt="">`:''}
           <div class="wk-tag">${esc(l.date)}</div>
@@ -713,11 +725,16 @@ function progressPct(lessonId){
 function renderLessonScreen(){
   const el = document.getElementById('lesson');
   if(!STATE.lessons.length){ el.innerHTML = `<div class="banner warn">No lessons yet.</div>`; return; }
-  if(!currentLessonId) currentLessonId = pickCurrentLesson().id;
+  const visible = publishedLessons();
+  if(!visible.length && !teacherPreviewMode){ el.innerHTML = `<div class="banner warn">No lessons have been published yet.</div>`; return; }
+  if(!teacherPreviewMode && (!currentLessonId || !visible.some(x=>x.id===currentLessonId))){
+    currentLessonId = pickCurrentLesson().id;
+  }
   const l = getLesson(currentLessonId);
   el.innerHTML = `
     <h1>This week's lesson</h1>
-    <div class="toolbar">${STATE.lessons.map(x=>`<button class="btn ${x.id===l.id?'':'secondary'}" onclick="openLesson('${x.id}')">${esc(x.date)}</button>`).join('')}</div>
+    <div class="toolbar">${visible.map(x=>`<button class="btn ${x.id===l.id?'':'secondary'}" onclick="openLesson('${x.id}')">${esc(x.date)}</button>`).join('')}</div>
+    ${teacherPreviewMode && (l.status||'Published')!=='Published' ? `<div class="banner warn">👀 Teacher preview — this lesson is currently <strong>${esc(lessonStatus(l))}</strong> and not visible to children.</div>` : ''}
     ${bannerFor(l)}
     <div class="lesson-card">
       <p><strong>Bible reading:</strong> ${(l.bibleReading||[]).map(esc).join(' · ')}</p>
@@ -737,7 +754,11 @@ function renderLessonScreen(){
 function renderActivityScreen(){
   const el = document.getElementById('activity');
   if(!STATE.lessons.length){ el.innerHTML = `<div class="banner warn">No lessons yet.</div>`; return; }
-  if(!currentLessonId) currentLessonId = pickCurrentLesson().id;
+  const visible = publishedLessons();
+  if(!visible.length && !teacherPreviewMode){ el.innerHTML = `<div class="banner warn">No lessons have been published yet.</div>`; return; }
+  if(!teacherPreviewMode && (!currentLessonId || !visible.some(x=>x.id===currentLessonId))){
+    currentLessonId = pickCurrentLesson().id;
+  }
   const l = getLesson(currentLessonId);
   const types = [['quiz','🧠 Bible quiz'],['wordsearch','🔤 Word search'],['unscramble','🔀 Unscramble'],['memory','📜 Memory verse'],['whoami','🔎 Who am I?']];
   if(l.chooseBetter) types.push(['choose','💎 Choose the treasure']);
@@ -906,9 +927,15 @@ function printWordSearch(withAnswers){
 }
 
 /* ---- Coloring page ---- */
-const COLOR_PALETTE = ['#E63946','#F3722C','#F9C74F','#90BE6D','#43AA8B','#577590',
-  '#277DA1','#9D4EDD','#F72585','#FFFFFF','#8D6E63','#2B2B2B'];
-let coloringCtx=null, coloringTool='brush', coloringColor='#E63946', coloringBrushSize=14, coloringDrawing=false;
+// 18 swatches: brights, a pastel row (incl. light blue), and neutrals/skin tones.
+const COLOR_PALETTE = [
+  '#E63946','#F3722C','#F9C74F','#90BE6D','#2D6A4F','#43AA8B','#277DA1','#1D3557','#9D4EDD','#F72585',
+  '#FFE8A3','#B9FBC0','#76C7F2','#FFB5C2','#D0BFFF',
+  '#F4C9A0','#8D6E63','#B0B0B0','#2B2B2B','#FFFFFF'
+];
+let coloringCtx=null, coloringTool='brush', coloringColor='#E63946', coloringBrushSize=14, coloringDrawing=false,
+    coloringZoom=1, coloringHistory=[], coloringRedoStack=[], coloringStrokeSaved=false;
+const COLORING_HISTORY_LIMIT = 15;
 async function renderColoring(l, box){
   if(!l.coloringImage){ box.innerHTML='<p class="muted">No coloring page has been added for this lesson yet.</p>'; return; }
   const token = renderToken;
@@ -921,6 +948,15 @@ async function renderColoring(l, box){
       <button class="btn secondary" onclick="setBrushSize(6)">S</button>
       <button class="btn secondary" onclick="setBrushSize(14)">M</button>
       <button class="btn secondary" onclick="setBrushSize(26)">L</button>
+    </div>
+    <div class="toolbar">
+      <button class="btn secondary" id="undoBtn" onclick="undoColoring()">↶ Undo</button>
+      <button class="btn secondary" id="redoBtn" onclick="redoColoring()">↷ Redo</button>
+      <span class="muted" style="align-self:center">Zoom:</span>
+      <button class="btn secondary" onclick="zoomColoring(-1)">🔍− </button>
+      <span class="muted" id="zoomLabel" style="align-self:center;min-width:42px;text-align:center">100%</span>
+      <button class="btn secondary" onclick="zoomColoring(1)">🔍+ </button>
+      <button class="btn secondary" onclick="zoomColoring(0)">Reset zoom</button>
     </div>
     <div class="coloring-canvas-wrap"><canvas id="coloringCanvas"></canvas></div>
     <div class="toolbar">
@@ -936,6 +972,7 @@ async function renderColoring(l, box){
     b.style.background=c; b.title=c; b.onclick=()=>selectColor(c,b); pal.appendChild(b);
   });
   updateToolButtons();
+  coloringZoom=1; coloringHistory=[]; coloringRedoStack=[]; updateUndoRedoButtons();
   const canvas = document.getElementById('coloringCanvas');
   coloringCtx = canvas.getContext('2d', {willReadFrequently:true});
   let src = l.coloringImage;
@@ -949,6 +986,7 @@ async function renderColoring(l, box){
   if(token!==renderToken) return;
   await loadImageToCanvas(canvas, src);
   if(token!==renderToken) return;
+  applyColoringZoom();
   attachCanvasHandlers(canvas);
 }
 function updateToolButtons(){
@@ -977,12 +1015,58 @@ function loadImageToCanvas(canvas, src){
     img.src=src;
   });
 }
+/* ---- Zoom: scales the canvas's on-screen CSS size; the underlying pixel
+   resolution (and so drawing/fill precision) never changes. */
+function applyColoringZoom(){
+  const canvas=document.getElementById('coloringCanvas');
+  if(!canvas || !canvas.width) return;
+  canvas.style.width = Math.round(canvas.width*coloringZoom)+'px';
+  canvas.style.height = Math.round(canvas.height*coloringZoom)+'px';
+  canvas.classList.toggle('zoomed', coloringZoom>1);
+  const label=document.getElementById('zoomLabel'); if(label) label.textContent=Math.round(coloringZoom*100)+'%';
+}
+function zoomColoring(dir){
+  if(dir===0) coloringZoom=1;
+  else coloringZoom=Math.max(0.5, Math.min(2.5, Math.round((coloringZoom+dir*0.25)*100)/100));
+  applyColoringZoom();
+}
+/* ---- Undo / redo: snapshots are pushed once per completed stroke or fill,
+   not per pixel, to keep the history small and each step meaningful. */
+function pushColoringHistory(){
+  if(!coloringCtx) return;
+  const canvas=document.getElementById('coloringCanvas');
+  try{
+    coloringHistory.push(coloringCtx.getImageData(0,0,canvas.width,canvas.height));
+    if(coloringHistory.length>COLORING_HISTORY_LIMIT) coloringHistory.shift();
+    coloringRedoStack=[];
+  }catch(e){}
+  updateUndoRedoButtons();
+}
+function undoColoring(){
+  if(!coloringHistory.length || !coloringCtx) return;
+  const canvas=document.getElementById('coloringCanvas');
+  coloringRedoStack.push(coloringCtx.getImageData(0,0,canvas.width,canvas.height));
+  coloringCtx.putImageData(coloringHistory.pop(),0,0);
+  updateUndoRedoButtons();
+}
+function redoColoring(){
+  if(!coloringRedoStack.length || !coloringCtx) return;
+  const canvas=document.getElementById('coloringCanvas');
+  coloringHistory.push(coloringCtx.getImageData(0,0,canvas.width,canvas.height));
+  coloringCtx.putImageData(coloringRedoStack.pop(),0,0);
+  updateUndoRedoButtons();
+}
+function updateUndoRedoButtons(){
+  const u=document.getElementById('undoBtn'), r=document.getElementById('redoBtn');
+  if(u) u.disabled = coloringHistory.length===0;
+  if(r) r.disabled = coloringRedoStack.length===0;
+}
 function attachCanvasHandlers(canvas){
   canvas.onpointerdown=e=>{
     e.preventDefault();
     const pos=canvasPos(canvas,e);
-    if(coloringTool==='fill'){ floodFill(pos.x,pos.y,coloringColor); }
-    else{ coloringDrawing=true; paintDot(pos.x,pos.y); }
+    if(coloringTool==='fill'){ pushColoringHistory(); floodFill(pos.x,pos.y,coloringColor); }
+    else{ pushColoringHistory(); coloringDrawing=true; paintDot(pos.x,pos.y); }
   };
   canvas.onpointermove=e=>{
     if(!coloringDrawing || coloringTool!=='brush') return;
@@ -1035,8 +1119,9 @@ function floodFill(x,y,hex){
 }
 function resetColoring(lessonId){
   if(!confirm('Clear your coloring and start over from the blank page?')) return;
+  pushColoringHistory();
   const l=getLesson(lessonId);
-  loadImageToCanvas(document.getElementById('coloringCanvas'), l.coloringImage);
+  loadImageToCanvas(document.getElementById('coloringCanvas'), l.coloringImage).then(applyColoringZoom);
 }
 async function saveColoring(lessonId){
   if(!activeProfileId){ alert('Pick a profile first.'); return; }
@@ -1536,7 +1621,7 @@ function teacherEdit(id){ editingLessonId=id; teacherSection='editor'; teacherCh
   draftImage = id ? (lessonImage(getLesson(id))||null) : null;
   draftColoringImage = id ? ((getLesson(id)||{}).coloringImage || null) : null;
   flashMessage=null; renderTeacher(); }
-function teacherPreview(id){ if(id) currentLessonId=id; go('lesson'); }
+function teacherPreview(id){ teacherPreviewMode=true; if(id) currentLessonId=id; go('lesson'); }
 async function deleteLesson(id){
   const l=getLesson(id); if(!confirm('Delete "'+(l?l.topic:'this lesson')+'"? This cannot be undone.')) return;
   try{ await deleteDoc(doc(db,'lessons',id)); }catch(e){ alert('Could not delete online. Check the connection.'); }
@@ -1553,15 +1638,24 @@ function relativeTime(ts){
 function lessonStatus(l){ return l.status||'Published'; }
 function lessonStatusClass(s){ return s==='Draft'?'status-draft':s==='Review'?'status-review':'status-live'; }
 function teacherLessonRows(){
-  return STATE.lessons.map(l=>`<tr>
+  return STATE.lessons.map(l=>{
+    const isLive = lessonStatus(l)==='Published';
+    return `<tr>
     <td>${lessonImage(l)?`<img src="${lessonImage(l)}" alt="" style="width:52px;height:38px;object-fit:cover;border-radius:7px">`:'<span class="muted">No image</span>'}</td>
     <td><strong>${esc(l.date||'—')}</strong></td><td>${esc(l.topic||'Untitled')}</td><td>${esc(l.story?.title||'—')}</td>
     <td><span class="status ${lessonStatusClass(lessonStatus(l))}">${esc(lessonStatus(l))}</span></td>
     <td><div class="toolbar" style="margin:0">
       <button class="btn secondary" onclick="teacherEdit('${l.id}')">Edit</button>
       <button class="btn secondary" onclick="teacherPreview('${l.id}')">Preview</button>
+      <button class="btn ${isLive?'secondary':''}" onclick="toggleLessonStatus('${l.id}')" title="${isLive?'Hide this lesson from children until reactivated':'Make this lesson visible to children again'}">${isLive?'⏸️ Deactivate':'▶️ Activate'}</button>
       <button class="btn danger" onclick="deleteLesson('${l.id}')">Delete</button>
-    </div></td></tr>`).join('');
+    </div></td></tr>`;}).join('');
+}
+async function toggleLessonStatus(id){
+  const l = getLesson(id); if(!l || !dbReady) return;
+  const next = lessonStatus(l)==='Published' ? 'Draft' : 'Published';
+  try{ await updateDoc(doc(db,'lessons',id), {status: next}); }
+  catch(e){ alert('Could not update online. Check the connection.'); }
 }
 async function fetchAllProgress(){
   if(!dbReady) return {};
@@ -1967,7 +2061,8 @@ Object.assign(window, {
   answerWhoAmI, renderWhoAmI, chooseTreasure, renderChooseBetter, renderCounting,
   showReflectSample, finishReflect, renderDeeperDive,
   renderColoring, setColoringTool, setBrushSize, selectColor, saveColoring, resetColoring, printColoring,
-  teacherLogin, lockTeacher, teacherTab, teacherEdit, teacherPreview, cancelEdit, deleteLesson,
+  zoomColoring, undoColoring, redoColoring,
+  navTo, teacherLogin, lockTeacher, teacherTab, teacherEdit, teacherPreview, cancelEdit, deleteLesson, toggleLessonStatus,
   addCharacterRow, removeCharacterRow, handleImageFile, removeDraftImage,
   handleColoringFile, removeDraftColoringImage,
   publishLesson, changePassword, seedStarterLessons
