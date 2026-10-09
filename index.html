@@ -1402,12 +1402,14 @@ function finishReflect(lessonId){
 
 /* ===================== BADGES (five-tier families) ===================== */
 // Each badge is now a family of 5 progressive tiers. Tier 1 keeps the
-// original milestone; tiers 2-5 raise the bar. See BADGE_FAMILIES below —
-// `metric()` reads live PROGRESS and returns the current count for that
-// family, compared against each tier's `threshold`.
+// original milestone; tiers 2-5 raise the bar. `metric(prog)` takes a
+// normalized progress object (defaults to the live PROGRESS elsewhere) so
+// the same families can be scored for any child — the active one, or any
+// other child's stored progress for the badges leaderboard.
+function progTotalPlays(prog){ return Object.values(prog.playCounts||{}).reduce((s,v)=>s+v,0); }
 const BADGE_FAMILIES = [
   { id:'explorer', label:'Bible Explorer', unit:'weeks fully completed',
-    metric:()=>Object.values(PROGRESS.completed).filter(w=>Object.keys(w).length>=4).length,
+    metric:(prog=PROGRESS)=>Object.values(prog.completed||{}).filter(w=>Object.keys(w).length>=4).length,
     tiers:[
       {name:'Explorer I',   icon:'📖',  threshold:1},
       {name:'Explorer II',  icon:'🗺️', threshold:3},
@@ -1416,7 +1418,7 @@ const BADGE_FAMILIES = [
       {name:'Explorer V',   icon:'🏆',  threshold:15},
     ]},
   { id:'verse', label:'Verse Keeper', unit:'memory-verse challenges',
-    metric:()=>Object.values(PROGRESS.completed).filter(w=>w.memory).length,
+    metric:(prog=PROGRESS)=>Object.values(prog.completed||{}).filter(w=>w.memory).length,
     tiers:[
       {name:'Verse Keeper I',   icon:'📜', threshold:2},
       {name:'Verse Keeper II',  icon:'📖', threshold:5},
@@ -1425,7 +1427,7 @@ const BADGE_FAMILIES = [
       {name:'Verse Keeper V',   icon:'👑', threshold:35},
     ]},
   { id:'detective', label:'Bible Detective', unit:"'Who am I?' clues correct",
-    metric:()=>PROGRESS.whoAmICorrect||0,
+    metric:(prog=PROGRESS)=>prog.whoAmICorrect||0,
     tiers:[
       {name:'Detective I',   icon:'🔎', threshold:5},
       {name:'Detective II',  icon:'🕵️', threshold:15},
@@ -1434,7 +1436,7 @@ const BADGE_FAMILIES = [
       {name:'Detective V',   icon:'🏅', threshold:75},
     ]},
   { id:'wordsearch', label:'Word Search Star', unit:'word searches completed',
-    metric:()=>Object.values(PROGRESS.completed).filter(w=>w.wordsearch).length,
+    metric:(prog=PROGRESS)=>Object.values(prog.completed||{}).filter(w=>w.wordsearch).length,
     tiers:[
       {name:'Word Search Starter',  icon:'🔤', threshold:1},
       {name:'Word Search Scout',    icon:'⭐', threshold:3},
@@ -1443,7 +1445,7 @@ const BADGE_FAMILIES = [
       {name:'Word Search Champion', icon:'👑', threshold:25},
     ]},
   { id:'shepherd', label:'Shepherd Friend', unit:'adventure points',
-    metric:()=>PROGRESS.points||0,
+    metric:(prog=PROGRESS)=>prog.points||0,
     tiers:[
       {name:'Shepherd Friend I',   icon:'🐑',  threshold:100},
       {name:'Shepherd Friend II',  icon:'🌿',  threshold:250},
@@ -1452,7 +1454,7 @@ const BADGE_FAMILIES = [
       {name:'Shepherd Friend V',   icon:'👑',  threshold:2000},
     ]},
   { id:'diligent', label:'Diligent Learner', unit:'plays of one activity',
-    metric:()=>Object.values(PROGRESS.playCounts||{}).reduce((m,n)=>Math.max(m,n),0),
+    metric:(prog=PROGRESS)=>Object.values(prog.playCounts||{}).reduce((m,n)=>Math.max(m,n),0),
     tiers:[
       {name:'Diligent Learner I',   icon:'💪', threshold:3},
       {name:'Diligent Learner II',  icon:'🔁', threshold:5},
@@ -1461,7 +1463,7 @@ const BADGE_FAMILIES = [
       {name:'Diligent Learner V',   icon:'🏆', threshold:30},
     ]},
   { id:'consistency', label:'Consistency Champ', unit:'activities played',
-    metric:()=>totalPlays(),
+    metric:(prog=PROGRESS)=>progTotalPlays(prog),
     tiers:[
       {name:'Consistency Champ I',   icon:'🔥',  threshold:15},
       {name:'Consistency Champ II',  icon:'📅',  threshold:30},
@@ -1470,7 +1472,7 @@ const BADGE_FAMILIES = [
       {name:'Consistency Champ V',   icon:'👑',  threshold:150},
     ]},
   { id:'hardworker', label:'Hard Worker', unit:'activities maxed out',
-    metric:()=>Object.values(PROGRESS.scores||{}).filter(s=>s.score>=s.max && s.max>0).length,
+    metric:(prog=PROGRESS)=>Object.values(prog.scores||{}).filter(s=>s.score>=s.max && s.max>0).length,
     tiers:[
       {name:'Hard Worker I',   icon:'🏗️', threshold:3},
       {name:'Hard Worker II',  icon:'💪', threshold:5},
@@ -1480,13 +1482,16 @@ const BADGE_FAMILIES = [
     ]},
 ];
 // Highest tier reached for a family: 0 (none yet) through 5 (all tiers).
-function familyEarnedTier(fam){
-  const val = fam.metric();
+// prog defaults to the live PROGRESS so every existing call site (My Badges
+// screen) is unaffected; pass another child's normalized progress to score
+// them instead — that's what the badges leaderboard below does.
+function familyEarnedTier(fam, prog=PROGRESS){
+  const val = fam.metric(prog);
   let t = 0;
   for(let i=0;i<fam.tiers.length;i++){ if(val>=fam.tiers[i].threshold) t=i+1; }
   return t;
 }
-function countBadges(){ return BADGE_FAMILIES.reduce((s,f)=>s+familyEarnedTier(f),0); }
+function countBadges(prog=PROGRESS){ return BADGE_FAMILIES.reduce((s,f)=>s+familyEarnedTier(f,prog),0); }
 function renderBadges(){
   const el=document.getElementById('badges');
   el.innerHTML=`<h1>My badges and progress</h1>
@@ -1522,7 +1527,16 @@ function renderBadges(){
     }).join('')}`;
 }
 
-/* ===================== LEADERBOARD (top 25, all children) ===================== */
+/* ===================== LEADERBOARD (top 5, all children) ===================== */
+function leaderboardRows(ranked, emojiFn){
+  const medals = ['🥇','🥈','🥉'];
+  return ranked.map((r,i)=>`<div class="leader-row ${i===0?'rank-1':''}">
+    <div class="leader-rank">${medals[i]||('#'+(i+1))}</div>
+    <div style="font-size:24px">${AGE_GROUPS[r.p.ageGroup]?.emoji||'🐑'}</div>
+    <div><div class="leader-name">${esc(r.p.name||'(no name)')}</div><div class="muted" style="font-size:11.5px">${esc(AGE_GROUPS[r.p.ageGroup]?.label||'')}</div></div>
+    <div class="leader-points">${emojiFn(r)}</div>
+  </div>`).join('');
+}
 async function renderLeaderboard(){
   const el = document.getElementById('leaderboard');
   const token = renderToken;
@@ -1530,22 +1544,32 @@ async function renderLeaderboard(){
   let all = {};
   try{ all = await fetchAllProgress(); }catch(e){ /* fall through with empty results */ }
   if(token !== renderToken) return; // a newer screen loaded while we were fetching
-  const ranked = PROFILES
+  // Points board: raw progress.points, no normalization needed (reads one field).
+  const byPoints = PROFILES
     .map(p=>({p, points:(all[p.id] && all[p.id].points) || 0}))
-    .sort((a,b)=>b.points-a.points)
-    .slice(0,25);
-  const medals = ['🥇','🥈','🥉'];
+    .sort((a,b)=>b.points-a.points || (a.p.name||'').localeCompare(b.p.name||''))
+    .slice(0,30);
+  // Badges board: tiers are computed from several progress fields, so each
+  // child's raw doc is normalized first (fills in completed/scores/playCounts
+  // etc. when a child has never played) before scoring it against BADGE_FAMILIES.
+  const byBadges = PROFILES
+    .map(p=>({p, badges: countBadges(normalizeProgress(all[p.id]||{}))}))
+    .sort((a,b)=>b.badges-a.badges || (a.p.name||'').localeCompare(b.p.name||''))
+    .slice(0,30);
   el.innerHTML = `<h1>🏆 Leaderboard</h1>
-    <div class="card">
-      <h2>Top 25 Bible Adventurers</h2>
-      <p class="muted">Ranked by adventure points earned across every lesson. Keep reading, playing and remembering to climb the list!</p>
-      ${ranked.length===0 ? `<p class="muted">No one has earned points yet — be the first!</p>` :
-        ranked.map((r,i)=>`<div class="leader-row ${i===0?'rank-1':''}">
-          <div class="leader-rank">${medals[i]||('#'+(i+1))}</div>
-          <div style="font-size:24px">${AGE_GROUPS[r.p.ageGroup]?.emoji||'🐑'}</div>
-          <div><div class="leader-name">${esc(r.p.name||'(no name)')}</div><div class="muted" style="font-size:11.5px">${esc(AGE_GROUPS[r.p.ageGroup]?.label||'')}</div></div>
-          <div class="leader-points">⭐ ${r.points}</div>
-        </div>`).join('')}
+    <div class="grid grid2">
+      <div class="card">
+        <h2>⭐ Top 30 Bible Adventurers by Points</h2>
+        <p class="muted">Ranked by adventure points earned across every lesson. Keep reading, playing and remembering to climb the list!</p>
+        ${byPoints.length===0 ? `<p class="muted">No one has earned points yet — be the first!</p>` :
+          leaderboardRows(byPoints, r=>`⭐ ${r.points}`)}
+      </div>
+      <div class="card">
+        <h2>🏅 Top 30 Bible Adventurers by Badges Earned</h2>
+        <p class="muted">Ranked by badge tiers earned across all 8 badge families (out of ${BADGE_FAMILIES.length*5} possible). Try every kind of activity to climb this one!</p>
+        ${byBadges.length===0 ? `<p class="muted">No one has earned a badge yet — be the first!</p>` :
+          leaderboardRows(byBadges, r=>`🏅 ${r.badges}`)}
+      </div>
     </div>`;
 }
 
