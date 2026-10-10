@@ -217,6 +217,13 @@
   #coloringCanvas{max-width:100%;height:auto;touch-action:none;border-radius:8px;background:#fff;cursor:crosshair}
   #coloringCanvas.zoomed{max-width:none}
   .tool-btn.active{background:var(--purple) !important;color:#fff !important;border-color:var(--purple) !important}
+  .maze-grid{display:grid;gap:0;margin:16px auto;width:max-content;user-select:none;touch-action:none}
+  .maze-cell{box-sizing:border-box;display:flex;align-items:center;justify-content:center;background:#fff;
+    font-size:15px;position:relative}
+  .maze-cell.path{background:#F0E4FF}
+  .maze-cell.start{background:var(--green-light)}
+  .maze-cell.goal{background:#FFF3D6}
+  .maze-cell .runner{position:relative;z-index:1}
   .coloring-gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px}
   .coloring-card{background:white;border:1px solid var(--border);border-radius:14px;padding:10px;text-align:center}
   .coloring-card img{width:100%;border-radius:8px;border:1px solid var(--border);margin-bottom:6px}
@@ -236,6 +243,7 @@
       <button data-screen="activity" onclick="navTo('activity',this)"><span class="navicon">🎮</span><span class="navlabel">Activities</span></button>
       <button data-screen="badges" onclick="go('badges',this)"><span class="navicon">🏆</span><span class="navlabel">My Badges</span></button>
       <button data-screen="leaderboard" onclick="go('leaderboard',this)"><span class="navicon">📊</span><span class="navlabel">Leaderboard</span></button>
+      <button data-screen="downloads" onclick="go('downloads',this)"><span class="navicon">📥</span><span class="navlabel">Downloads</span></button>
       <button data-screen="teacher" onclick="go('teacher',this)"><span class="navicon">🧑‍🏫</span><span class="navlabel">Teacher</span></button>
     </nav>
     <div class="sidebar-foot" id="sidebarFoot">Learn it. Play it. Remember it. Live it.</div>
@@ -253,6 +261,7 @@
     <section id="activity" class="screen"></section>
     <section id="badges" class="screen"></section>
     <section id="leaderboard" class="screen"></section>
+    <section id="downloads" class="screen"></section>
     <section id="teacher" class="screen"></section>
   </main>
 </div>
@@ -651,6 +660,7 @@ function go(id, btn){
   if(id==='activity') renderActivityScreen();
   if(id==='badges') renderBadges();
   if(id==='leaderboard') renderLeaderboard();
+  if(id==='downloads') renderDownloadsPage();
   if(id==='teacher') renderTeacherGate();
   window.scrollTo({top:0, behavior:'instant'});
 }
@@ -761,6 +771,7 @@ function renderActivityScreen(){
   }
   const l = getLesson(currentLessonId);
   const types = [['quiz','🧠 Bible quiz'],['wordsearch','🔤 Word search'],['unscramble','🔀 Unscramble'],['memory','📜 Memory verse'],['whoami','🔎 Who am I?']];
+  if(l.mazeEnabled !== false) types.push(['maze','🐾 Maze']);
   if(l.chooseBetter) types.push(['choose','💎 Choose the treasure']);
   if(l.coloringImage) types.push(['coloring','🎨 Coloring page']);
   if(ageKey()==='3-5') types.splice(1,0,['count','🔢 Counting fun']);
@@ -788,6 +799,7 @@ function renderActivityContent(){
   if(currentActivity==='count') return renderCounting(l, box);
   if(currentActivity==='deeper') return renderDeeperDive(l, box);
   if(currentActivity==='coloring') return renderColoring(l, box);
+  if(currentActivity==='maze') return renderMaze(l, box);
 }
 function bankedLine(lessonId, type, max){
   const banked = (PROGRESS.scores[lessonId+':'+type]||{score:0}).score;
@@ -1175,6 +1187,257 @@ async function renderColoringsGallery(){
       </div>`;
     }).join('')}
   </div>`;
+}
+
+/* ---- Downloads (teacher admin) ---- */
+let draftDownloadFile = null;
+function handleDownloadFile(input){
+  const file = input.files && input.files[0]; if(!file) return;
+  const note = document.getElementById('downloadFileNote');
+  note.textContent = 'Reading file…'; note.style.color = '';
+  const reader = new FileReader();
+  reader.onload = e=>{
+    const dataUri = e.target.result;
+    // Match the title/description that will actually be saved alongside it,
+    // so this size check reflects the real document that gets written.
+    const probe = {title: val('dlTitle')||'x', description: val('dlDescription')||'', fileName: file.name, fileType: file.type, fileData: dataUri};
+    const sizeBytes = new Blob([JSON.stringify(probe)]).size;
+    if(sizeBytes > MAX_LESSON_DOC_BYTES){
+      note.style.color = '#A32B2B';
+      note.textContent = `This file is about ${Math.round(sizeBytes/1024)} KB once stored — that's over the ${Math.round(MAX_LESSON_DOC_BYTES/1024)} KB limit. Please compress it further and choose it again.`;
+      draftDownloadFile = null;
+      return;
+    }
+    draftDownloadFile = {fileName: file.name, fileType: file.type, fileData: dataUri};
+    note.style.color = '';
+    note.textContent = `Ready to add: ${file.name} (about ${Math.round(sizeBytes/1024)} KB)`;
+  };
+  reader.onerror = ()=>{ note.style.color='#A32B2B'; note.textContent='That file could not be read. Try a different file.'; };
+  reader.readAsDataURL(file);
+}
+async function addDownload(){
+  const title = val('dlTitle'), description = val('dlDescription');
+  const msg = document.getElementById('downloadAddMsg');
+  if(!title){ msg.style.color='#A32B2B'; msg.textContent='Please give the file a title.'; return; }
+  if(!draftDownloadFile){ msg.style.color='#A32B2B'; msg.textContent='Please choose a file first.'; return; }
+  if(!dbReady){ msg.style.color='#A32B2B'; msg.textContent='Not connected — check your connection and try again.'; return; }
+  msg.style.color='#6B6178'; msg.textContent='Adding…';
+  try{
+    await addDoc(collection(db,'downloads'), {
+      title, description,
+      fileName: draftDownloadFile.fileName, fileType: draftDownloadFile.fileType, fileData: draftDownloadFile.fileData,
+      addedAt: Date.now()
+    });
+    draftDownloadFile = null;
+    renderDownloadsAdmin();
+  }catch(e){ msg.style.color='#A32B2B'; msg.textContent='Could not add online. Check the connection.'; }
+}
+async function deleteDownload(id){
+  if(!confirm('Delete this download for everyone?')) return;
+  try{ await deleteDoc(doc(db,'downloads',id)); renderDownloadsAdmin(); }
+  catch(e){ alert('Could not delete online. Check the connection.'); }
+}
+async function renderDownloadsAdmin(){
+  const c = document.getElementById('downloadsAdminCard'); if(!c) return;
+  c.innerHTML = '<p class="muted">Loading…</p>';
+  let items = [];
+  try{ items = await fetchAllDownloads(); }catch(e){ /* fall through with empty list */ }
+  c.innerHTML = `
+    <div class="card">
+      <h2>Add a new download</h2>
+      <label class="field">Title</label><input class="input" id="dlTitle" placeholder="App Guide for Kids">
+      <label class="field">Description (optional)</label><textarea class="input" id="dlDescription" rows="2" placeholder="A fun guide showing how to use the app"></textarea>
+      <label class="field">File (PDF or similar — compress to under about 650 KB first)</label>
+      <input type="file" id="dlFile" onchange="handleDownloadFile(this)">
+      <p id="downloadFileNote" class="img-meta"></p>
+      <div class="toolbar"><button class="btn green" onclick="addDownload()">Add download</button></div>
+      <div id="downloadAddMsg" class="feedback" role="status"></div>
+    </div>
+    <div class="card">
+      <h2>Current downloads</h2>
+      ${items.length===0 ? '<p class="muted">No downloads added yet.</p>' : items.map(it=>`
+        <div class="leader-row">
+          <div style="font-size:24px">📄</div>
+          <div><div class="leader-name">${esc(it.title||it.fileName||'Download')}</div>${it.description?`<div class="muted" style="font-size:11.5px">${esc(it.description)}</div>`:''}</div>
+          <div class="toolbar" style="margin:0 0 0 auto"><button class="btn danger" onclick="deleteDownload('${it.id}')">Delete</button></div>
+        </div>`).join('')}
+    </div>`;
+}
+
+/* ---- Maze ---- */
+// A fresh, always-solvable maze is generated every time with a recursive
+// backtracker (carve a random path through every cell, no teacher content
+// needed) — same approach used by every maze generator of this kind.
+let mazeGrid=null, mazeSize=0, mazePath=[], mazeMode='tap', mazeTracing=false, mazeSolved=false, mazeGoal=null,
+    mazeStartIcon='🐑', mazeGoalIcon='⛪', mazeGoalLabel='the church';
+function generateMaze(size){
+  const cells = Array.from({length:size},()=>Array.from({length:size},()=>({N:false,S:false,E:false,W:false})));
+  const visited = Array.from({length:size},()=>Array(size).fill(false));
+  function carve(r,c){
+    visited[r][c]=true;
+    const dirs=[['N',-1,0,'S'],['S',1,0,'N'],['E',0,1,'W'],['W',0,-1,'E']];
+    for(let i=dirs.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [dirs[i],dirs[j]]=[dirs[j],dirs[i]]; }
+    for(const [dir,dr,dc,opp] of dirs){
+      const nr=r+dr, nc=c+dc;
+      if(nr<0||nc<0||nr>=size||nc>=size||visited[nr][nc]) continue;
+      cells[r][c][dir]=true; cells[nr][nc][opp]=true;
+      carve(nr,nc);
+    }
+  }
+  carve(0,0);
+  return cells;
+}
+// Bigger, harder maze for older age groups.
+function mazeSettings(){
+  const age=ageKey();
+  if(age==='3-5') return {size:6, cell:46};
+  if(age==='10-12') return {size:13, cell:30};
+  return {size:9, cell:38};
+}
+function mazeConnected(a,b){
+  if(!mazeGrid) return false;
+  const dr=b.r-a.r, dc=b.c-a.c;
+  const cell=mazeGrid[a.r][a.c];
+  if(dr===-1&&dc===0) return cell.N;
+  if(dr===1&&dc===0) return cell.S;
+  if(dr===0&&dc===1) return cell.E;
+  if(dr===0&&dc===-1) return cell.W;
+  return false;
+}
+// Raw (unescaped) text — callers escape it for innerHTML, or use it as-is
+// for textContent (which never interprets HTML entities).
+function mazeHintText(){
+  return `Help ${mazeStartIcon} find the way to ${mazeGoalLabel}! `
+    + (mazeMode==='tap' ? 'Tap a path next to you to move.' : 'Drag your finger along the path.');
+}
+function renderMaze(l, box){
+  const {size, cell} = mazeSettings();
+  mazeGrid = generateMaze(size); mazeSize=size;
+  mazeGoal={r:size-1,c:size-1};
+  mazeStartIcon = l.mazeStartIcon || '🐑';
+  mazeGoalIcon = l.mazeGoalIcon || '⛪';
+  mazeGoalLabel = l.mazeGoalLabel || 'the church';
+  mazePath=[{r:0,c:0}]; mazeSolved=false; mazeTracing=false;
+  box.innerHTML = `<h2>🐾 Maze</h2>
+    <p class="muted" id="mazeHint">${esc(mazeHintText())}</p>
+    <div class="toolbar">
+      <button class="btn secondary tool-btn" id="mazeModeTap" onclick="setMazeMode('tap')">👆 Tap to move</button>
+      <button class="btn secondary tool-btn" id="mazeModeTrace" onclick="setMazeMode('trace')">✍️ Trace the path</button>
+      <button class="btn secondary" onclick="renderMaze(getLesson(currentLessonId), document.getElementById('activityBox'))">🔀 New maze</button>
+      <button class="btn secondary" onclick="printMaze()">🖨️ Print this maze</button>
+    </div>
+    <div class="grid-scroll"><div class="maze-grid" id="mazeGridEl" style="grid-template-columns:repeat(${size},${cell}px)"></div></div>
+    <div id="mazeFeedback" class="feedback" role="status"></div>`;
+  updateMazeModeButtons();
+  const gridEl = document.getElementById('mazeGridEl');
+  const WALL = '3px solid #2E2145';
+  for(let r=0;r<size;r++){
+    for(let c=0;c<size;c++){
+      const cd = mazeGrid[r][c];
+      const d=document.createElement('div');
+      d.className='maze-cell'; d.dataset.r=r; d.dataset.c=c;
+      d.style.width=cell+'px'; d.style.height=cell+'px';
+      d.style.borderTop = !cd.N ? WALL : '1px solid transparent';
+      d.style.borderLeft = !cd.W ? WALL : '1px solid transparent';
+      d.style.borderRight = (c===size-1) ? WALL : 'none';
+      d.style.borderBottom = (r===size-1) ? WALL : 'none';
+      if(r===0&&c===0) d.classList.add('start');
+      if(r===size-1&&c===size-1){ d.classList.add('goal'); d.textContent=mazeGoalIcon; }
+      gridEl.appendChild(d);
+    }
+  }
+  renderMazeRunner();
+  attachMazeHandlers(gridEl);
+}
+function updateMazeModeButtons(){
+  const t=document.getElementById('mazeModeTap'), r=document.getElementById('mazeModeTrace');
+  if(t) t.classList.toggle('active', mazeMode==='tap');
+  if(r) r.classList.toggle('active', mazeMode==='trace');
+}
+function setMazeMode(m){
+  mazeMode=m; updateMazeModeButtons();
+  const hint=document.getElementById('mazeHint'); if(hint) hint.textContent=mazeHintText();
+}
+function renderMazeRunner(){
+  document.querySelectorAll('.maze-cell.path').forEach(el=>el.classList.remove('path'));
+  document.querySelectorAll('.maze-cell .runner').forEach(el=>el.remove());
+  mazePath.forEach(p=>{
+    const el=document.querySelector(`.maze-cell[data-r="${p.r}"][data-c="${p.c}"]`);
+    if(el) el.classList.add('path');
+  });
+  const last=mazePath[mazePath.length-1];
+  const el=document.querySelector(`.maze-cell[data-r="${last.r}"][data-c="${last.c}"]`);
+  if(el){ const span=document.createElement('span'); span.className='runner'; span.textContent=mazeStartIcon; el.appendChild(span); }
+}
+// Shared by both tap-to-move and finger-trace: a step is only ever taken
+// to an orthogonal neighbor with no wall in the way. Stepping onto the
+// cell just behind you retreats (handy if a trace wobbles off course).
+function mazeStep(target){
+  if(mazeSolved) return;
+  const last = mazePath[mazePath.length-1];
+  if(mazePath.length>1 && target.r===mazePath[mazePath.length-2].r && target.c===mazePath[mazePath.length-2].c){
+    mazePath.pop(); renderMazeRunner(); return;
+  }
+  if(target.r===last.r && target.c===last.c) return;
+  if(Math.abs(target.r-last.r)+Math.abs(target.c-last.c)!==1) return;
+  if(!mazeConnected(last, target)) return;
+  mazePath.push(target);
+  renderMazeRunner();
+  if(target.r===mazeGoal.r && target.c===mazeGoal.c) mazeWin();
+}
+function attachMazeHandlers(gridEl){
+  gridEl.onclick = e=>{
+    if(mazeMode!=='tap') return;
+    const cellEl = e.target.closest('.maze-cell'); if(!cellEl) return;
+    mazeStep({r:+cellEl.dataset.r, c:+cellEl.dataset.c});
+  };
+  gridEl.onpointerdown = e=>{
+    if(mazeMode!=='trace') return;
+    const cellEl = e.target.closest('.maze-cell'); if(!cellEl) return;
+    const target={r:+cellEl.dataset.r, c:+cellEl.dataset.c};
+    const last = mazePath[mazePath.length-1];
+    if(target.r===last.r && target.c===last.c) mazeTracing=true;
+  };
+  gridEl.onpointermove = e=>{
+    if(mazeMode!=='trace' || !mazeTracing) return;
+    e.preventDefault();
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    const cellEl = el && el.closest ? el.closest('.maze-cell') : null;
+    if(!cellEl) return;
+    mazeStep({r:+cellEl.dataset.r, c:+cellEl.dataset.c});
+  };
+  const stop=()=>{ mazeTracing=false; };
+  gridEl.onpointerup=stop; gridEl.onpointerleave=stop; gridEl.onpointercancel=stop;
+}
+function mazeWin(){
+  mazeSolved=true;
+  const fb=document.getElementById('mazeFeedback');
+  if(fb){ fb.textContent='🎉 You made it! Well done!'; fb.style.color='#1E8A4C'; }
+  recordActivityScore(currentLessonId, 'maze', 15, 15, true);
+}
+function printMaze(){
+  if(!mazeGrid) return;
+  const size=mazeSize; const WALL='3px solid #2E2145';
+  let rowsHTML='';
+  for(let r=0;r<size;r++){
+    rowsHTML+='<tr>';
+    for(let c=0;c<size;c++){
+      const cd=mazeGrid[r][c];
+      const bt=!cd.N?WALL:'1px solid transparent', bl=!cd.W?WALL:'1px solid transparent';
+      const br=(c===size-1)?WALL:'none', bb=(r===size-1)?WALL:'none';
+      let content='';
+      if(r===0&&c===0) content=mazeStartIcon; if(r===size-1&&c===size-1) content=mazeGoalIcon;
+      rowsHTML += `<td style="width:26px;height:26px;border-top:${bt};border-left:${bl};border-right:${br};border-bottom:${bb};text-align:center;font-size:14px">${esc(content)}</td>`;
+    }
+    rowsHTML+='</tr>';
+  }
+  document.getElementById('printArea').innerHTML = `<div class="print-page">
+    <h1>🌟 Bible Adventure — Maze</h1>
+    <p class="print-sub">Find the way from ${esc(mazeStartIcon)} to ${esc(mazeGoalLabel)} ${esc(mazeGoalIcon)}!</p>
+    <table style="border-collapse:collapse;margin:0 auto">${rowsHTML}</table>
+    <p class="print-footer">The Covenant Nation Lekki — Bible Adventure Sunday School</p>
+  </div>`;
+  window.print();
 }
 
 /* ---- Unscramble ---- */
@@ -1573,6 +1836,34 @@ async function renderLeaderboard(){
     </div>`;
 }
 
+/* ===================== DOWNLOADS ===================== */
+// Files live as base64 data directly inside their Firestore document —
+// same pattern as lesson photos and coloring templates — so they must stay
+// under MAX_LESSON_DOC_BYTES once encoded (roughly a 650KB original file).
+async function fetchAllDownloads(){
+  if(!dbReady) return [];
+  const snap = await getDocs(collection(db,'downloads'));
+  return snap.docs.map(d=>({id:d.id, ...d.data()})).sort((a,b)=>(b.addedAt||0)-(a.addedAt||0));
+}
+async function renderDownloadsPage(){
+  const el = document.getElementById('downloads');
+  const token = renderToken;
+  el.innerHTML = `<h1>📥 Downloads</h1><div class="card"><p class="muted">Loading…</p></div>`;
+  let items = [];
+  try{ items = await fetchAllDownloads(); }catch(e){ /* fall through with empty list */ }
+  if(token !== renderToken) return;
+  el.innerHTML = `<h1>📥 Downloads</h1>
+    <div class="card">
+      <p class="muted">Guides and printable files your teacher has shared.</p>
+      ${items.length===0 ? `<p class="muted">Nothing has been shared yet — check back soon!</p>` :
+        items.map(it=>`<div class="leader-row">
+          <div style="font-size:26px">📄</div>
+          <div><div class="leader-name">${esc(it.title||it.fileName||'Download')}</div>${it.description?`<div class="muted" style="font-size:12px">${esc(it.description)}</div>`:''}</div>
+          <a class="btn" style="margin-left:auto" href="${it.fileData}" download="${esc(it.fileName||'download')}">⬇️ Download</a>
+        </div>`).join('')}
+    </div>`;
+}
+
 /* ===================== TEACHER LOGIN (Firebase Auth) ===================== */
 function renderTeacherGate(){
   if(teacherUnlocked) return renderTeacher();
@@ -1640,7 +1931,7 @@ function renderCharacterSummary(){
 function addCharacterRow(){ teacherCharacters.push({name:'',clue:''}); renderCharacterRows(); }
 function removeCharacterRow(i){ teacherCharacters.splice(i,1); if(!teacherCharacters.length) teacherCharacters=[{name:'',clue:''}]; renderCharacterRows(); }
 function cancelEdit(){ editingLessonId=null; teacherCharactersInitializedFor='unset'; draftImage=null; draftColoringImage=null; teacherSection='lessons'; renderTeacher(); }
-function teacherTab(name){ teacherSection=name; editingLessonId=null; teacherCharactersInitializedFor='unset'; draftImage=null; draftColoringImage=null; flashMessage=null; renderTeacher(); }
+function teacherTab(name){ teacherSection=name; editingLessonId=null; teacherCharactersInitializedFor='unset'; draftImage=null; draftColoringImage=null; draftDownloadFile=null; flashMessage=null; renderTeacher(); }
 function teacherEdit(id){ editingLessonId=id; teacherSection='editor'; teacherCharactersInitializedFor='unset';
   draftImage = id ? (lessonImage(getLesson(id))||null) : null;
   draftColoringImage = id ? ((getLesson(id)||{}).coloringImage || null) : null;
@@ -1821,6 +2112,16 @@ function teacherEditor(){
   <div class="banner warn" id="teacherBanner" style="display:none"></div>
   <label class="field">Lesson picture</label><div id="imgField"></div>
   <label class="field">Coloring page outline (optional)</label><div id="colorField"></div>
+  <label class="field">Maze activity</label>
+  <select class="input" id="tfMazeEnabled">
+    <option value="yes" ${(editing?editing.mazeEnabled!==false:true)?'selected':''}>Yes — show a Maze this week</option>
+    <option value="no" ${(editing?editing.mazeEnabled===false:false)?'selected':''}>No — hide the Maze this week</option>
+  </select>
+  <div class="grid grid3">
+    <div><label class="field">Maze runner icon</label><input class="input" id="tfMazeStart" maxlength="4" value="${esc(editing?.mazeStartIcon||'🐑')}"></div>
+    <div><label class="field">Maze goal icon</label><input class="input" id="tfMazeGoalIcon" maxlength="4" value="${esc(editing?.mazeGoalIcon||'⛪')}"></div>
+    <div><label class="field">Maze goal name (shown in the hint)</label><input class="input" id="tfMazeGoalLabel" placeholder="the church" value="${esc(editing?.mazeGoalLabel||'')}"></div>
+  </div>
   <div class="grid grid2">
     <div><label class="field">Date</label><input class="input" id="tfDate" value="${esc(editing?.date||'')}" placeholder="Sunday, 4 October 2026"></div>
     <div><label class="field">Theme</label><input class="input" id="tfTheme" value="${esc(editing?.theme||'')}"></div>
@@ -1934,6 +2235,9 @@ function renderTeacher(){
   if(teacherSection==='colorings') body=`
     <div class="section-head"><div><h1>Children's coloring pages</h1><p class="muted">Every saved coloring, across all lessons and children.</p></div></div>
     <div id="coloringsCard"><p class="muted">Loading…</p></div>`;
+  if(teacherSection==='downloads') body=`
+    <div class="section-head"><div><h1>Downloads</h1><p class="muted">Guides and files children and parents can download from the app.</p></div></div>
+    <div id="downloadsAdminCard"><p class="muted">Loading…</p></div>`;
   if(teacherSection==='settings') body=teacherSettings();
   el.innerHTML=`<div class="teacher-nav">
     <button class="${teacherSection==='dashboard'?'selected':''}" onclick="teacherTab('dashboard')">🏠 Dashboard</button>
@@ -1941,6 +2245,7 @@ function renderTeacher(){
     <button class="${teacherSection==='class'?'selected':''}" onclick="teacherTab('class')">👧 Class</button>
     <button class="${teacherSection==='progress'?'selected':''}" onclick="teacherTab('progress')">📊 Progress</button>
     <button class="${teacherSection==='colorings'?'selected':''}" onclick="teacherTab('colorings')">🎨 Colorings</button>
+    <button class="${teacherSection==='downloads'?'selected':''}" onclick="teacherTab('downloads')">📥 Downloads</button>
     <button class="${teacherSection==='settings'?'selected':''}" onclick="teacherTab('settings')">⚙️ Settings</button>
     <span class="spacer"></span><button onclick="lockTeacher()">🔓 Log out</button>
   </div>${body}`;
@@ -1948,6 +2253,7 @@ function renderTeacher(){
   if(teacherSection==='class') buildEngagementTable().then(html=>{ const c=document.getElementById('classCard'); if(c) c.innerHTML=html; });
   if(teacherSection==='progress') teacherReports().then(html=>{ const c=document.getElementById('reportsCard'); if(c) c.innerHTML=html; });
   if(teacherSection==='colorings') renderColoringsGallery().then(html=>{ const c=document.getElementById('coloringsCard'); if(c) c.innerHTML=html; });
+  if(teacherSection==='downloads') renderDownloadsAdmin();
 }
 function val(id){ const el=document.getElementById(id); return el?el.value.trim():''; }
 async function publishLesson(){
@@ -1962,6 +2268,10 @@ async function publishLesson(){
     date: val('tfDate') || 'Untitled week',
     image: draftImage || '',
     coloringImage: draftColoringImage || '',
+    mazeEnabled: val('tfMazeEnabled') !== 'no',
+    mazeStartIcon: val('tfMazeStart') || '🐑',
+    mazeGoalIcon: val('tfMazeGoalIcon') || '⛪',
+    mazeGoalLabel: val('tfMazeGoalLabel') || 'the church',
     status: val('tfStatus') || 'Published',
     theme: val('tfTheme') || topic,
     topic, reference: val('tfRef'),
@@ -2085,7 +2395,9 @@ Object.assign(window, {
   answerWhoAmI, renderWhoAmI, chooseTreasure, renderChooseBetter, renderCounting,
   showReflectSample, finishReflect, renderDeeperDive,
   renderColoring, setColoringTool, setBrushSize, selectColor, saveColoring, resetColoring, printColoring,
+  renderDownloadsPage, handleDownloadFile, addDownload, deleteDownload,
   zoomColoring, undoColoring, redoColoring,
+  renderMaze, setMazeMode, printMaze,
   navTo, teacherLogin, lockTeacher, teacherTab, teacherEdit, teacherPreview, cancelEdit, deleteLesson, toggleLessonStatus,
   addCharacterRow, removeCharacterRow, handleImageFile, removeDraftImage,
   handleColoringFile, removeDraftColoringImage,
