@@ -16,7 +16,7 @@
   button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
   .app{display:flex;min-height:100vh}
   aside{width:230px;background:linear-gradient(180deg,var(--purple),var(--purple-dark));color:white;
-    padding:22px 14px;position:fixed;inset:0 auto 0 0;display:flex;flex-direction:column;z-index:5}
+    padding:22px 14px;position:fixed;inset:0 auto 0 0;display:flex;flex-direction:column;z-index:5;overflow-y:auto}
   .logo{font-size:21px;font-weight:800;line-height:1.15;margin:0 8px 26px}
   .logo span{display:block;color:var(--gold);font-size:12px;margin-top:6px;font-weight:600}
   nav{display:flex;flex-direction:column;gap:3px}
@@ -130,6 +130,8 @@
   .leader-rank{font-size:22px;font-weight:900;color:var(--purple-dark);width:34px;text-align:center;flex-shrink:0}
   .leader-name{font-weight:800;font-size:14.5px}
   .leader-points{margin-left:auto;font-weight:800;color:var(--purple-dark);white-space:nowrap}
+  .reading-item{display:flex;align-items:center;gap:14px;background:white;border:1px solid var(--border);border-radius:14px;padding:12px 16px;margin-bottom:10px;font-weight:700;line-height:1.4}
+  .reading-num{width:30px;height:30px;border-radius:50%;background:var(--purple);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0}
   .banner{padding:12px 16px;border-radius:12px;font-weight:700;font-size:13.5px;margin-bottom:14px}
   .banner.warn{background:#FFF3D6;color:#8A5A00;border:1px solid #F0D27B}
   .banner.ok{background:var(--green-light);color:var(--green);border:1px solid #B7E3C6}
@@ -194,6 +196,87 @@
     .lesson-banner .banner-text h2{font-size:21px}
   }
   @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+
+  /* ---- Crossword ---- */
+  .cw-layout{display:grid;grid-template-columns:auto 1fr;gap:20px;align-items:start;margin-top:10px}
+  .cw-grid{display:grid;gap:2px;width:max-content;user-select:none;margin:6px 0}
+  .cw-blank{width:var(--cw);height:var(--cw)}
+  .cw-cell{position:relative;width:var(--cw);height:var(--cw);background:#fff;border:1.5px solid #B9A7D6;border-radius:5px}
+  .cw-cell input{width:100%;height:100%;border:0;background:transparent;text-align:center;font-weight:800;
+    font-size:calc(var(--cw)*.5);text-transform:uppercase;padding:calc(var(--cw)*.16) 0 0;color:var(--ink);
+    font-family:inherit;border-radius:5px;caret-color:transparent;cursor:pointer}
+  .cw-cell.cw-word{background:#F3E9FF}
+  .cw-cell.solved{background:var(--green-light);border-color:var(--green)}
+  .cw-cell.cw-cur{background:#FFE9A8;border-color:var(--gold-dark)}
+  .cw-cell.wrong{background:#FDEBEB;border-color:var(--red)}
+  .cw-cell.wrong input{color:var(--red)}
+  .cw-cell.hint input{color:var(--blue)}
+  .cw-num{position:absolute;top:1px;left:3px;font-size:max(8px,calc(var(--cw)*.28));font-weight:800;color:var(--purple);pointer-events:none;line-height:1}
+  .cw-now{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:10px 13px;margin:10px 0;font-size:14px;min-height:42px}
+  .cw-clues{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .cw-clues ol{list-style:none;margin:0;padding:0;display:grid;gap:5px}
+  .cw-clue{width:100%;text-align:left;border:1.5px solid var(--border);background:var(--paper);border-radius:10px;padding:8px 10px;
+    font-family:inherit;font-size:13.5px;line-height:1.4;cursor:pointer;color:var(--ink)}
+  .cw-clue:hover{border-color:var(--purple)}
+  .cw-clue.active{border-color:var(--purple);background:#F3E9FF}
+  .cw-clue.done{background:var(--green-light);border-color:var(--green);color:var(--green)}
+  .cw-clue.done .cw-ct{text-decoration:line-through}
+  @media (max-width:860px){.cw-layout{grid-template-columns:1fr}.cw-clues{grid-template-columns:1fr}}
+  .cw-erow{display:flex;gap:8px;align-items:flex-start;margin-bottom:8px;flex-wrap:wrap}
+  .cw-ecol-a{width:170px;flex:0 0 170px}
+  .cw-ecol-a input{text-transform:uppercase;font-weight:700;letter-spacing:.5px}
+  .cw-erow .cw-clue-in{flex:1;min-width:180px}
+  .cw-mini{border-collapse:collapse;margin:8px 0;width:auto;table-layout:fixed;background:none;border-radius:0;overflow:visible}
+  .cw-mini td{border:none;width:24px;height:24px;padding:0;text-align:center;font:700 12px 'Courier New',monospace;position:relative;text-transform:uppercase}
+  .cw-mini td.on{border:1.5px solid #6B3FA0;background:#fff}
+  .cw-mini .pn{position:absolute;top:0;left:1px;font:700 7px Arial,sans-serif;color:#6B3FA0}
+  .print-cw{border-collapse:collapse;margin:0 auto;width:auto;table-layout:fixed;background:none;border-radius:0;overflow:visible}
+  .print-cw td{border:none;width:30px;height:30px;padding:0;position:relative;text-align:center;vertical-align:middle;
+    font-family:'Courier New',monospace;font-weight:700;font-size:16px;text-transform:uppercase}
+  .print-cw td.pc{border:1.5px solid #222}
+  .print-cw .pn{position:absolute;top:1px;left:2px;font:700 8px Arial,sans-serif;line-height:1}
+  .print-clues{display:flex;gap:34px;text-align:left;margin-top:18px;font-size:13px;line-height:1.55;justify-content:center}
+  .print-clues div{flex:1;max-width:46%}
+  .print-clues h3{font-size:14px;margin:0 0 4px}
+  .print-clues p{margin:0 0 3px}
+  .print-name{text-align:left;font-size:13px;margin:0 0 12px}
+
+  /* ---- Weekly Challenge ---- */
+  .lb-pane>h1{font-size:19px;margin:6px 0 4px}
+  .ch-inner{margin-top:6px;padding-top:14px;border-top:1px dashed var(--border)}
+  .ch-board{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;max-width:460px;margin:12px 0}
+  .ch-sq{position:relative;aspect-ratio:1;background:#fff;border:2px solid var(--border);border-radius:12px;display:flex;
+    align-items:center;justify-content:center;font-size:clamp(16px,4vw,26px)}
+  .ch-sq .ch-n{position:absolute;top:2px;left:5px;font-size:10px;font-weight:800;color:var(--muted)}
+  .ch-sq .ch-ic{transition:opacity .2s}
+  .ch-sq.cur .ch-ic{opacity:.3}
+  .ch-sq.passed{background:var(--green-light);border-color:var(--green)}
+  .ch-sq.cur{border-color:var(--purple);background:#F3E9FF;box-shadow:0 0 0 3px rgba(107,63,160,.25)}
+  .ch-sq.bonus{border-color:var(--gold-dark);background:#FFF3D6}
+  .ch-sq.dbl{border-color:var(--blue);background:#E8F1FB}
+  .ch-sq.dbl .ch-ic{font-size:.62em;font-weight:900;color:var(--blue)}
+  .ch-sq.blank{visibility:hidden}
+  .ch-token{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:clamp(20px,5vw,32px);
+    filter:drop-shadow(0 2px 3px rgba(0,0,0,.35));animation:chHop .45s}
+  @keyframes chHop{0%{transform:translateY(-14px) scale(1.2)}60%{transform:translateY(2px)}100%{transform:none}}
+  @keyframes chShake{0%,100%{transform:none}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+  .ch-status{font-weight:800;color:var(--purple-dark);margin:6px 0 10px;font-size:14px}
+  .ch-emoji{font-size:clamp(40px,10vw,64px);text-align:center;letter-spacing:6px;margin:10px 0;line-height:1.25;
+    background:var(--paper);border:1px solid var(--border);border-radius:16px;padding:16px}
+  .ch-order{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+  .ch-slot{padding:6px 10px;border-radius:10px;background:#fff;border:1.5px dashed #CDBBE8;font-size:13px;font-weight:700;color:var(--muted)}
+  .ch-slot.filled{background:var(--green-light);border:1.5px solid var(--green);color:var(--green)}
+  .ch-bank{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+  .ch-chip{padding:10px 14px;border-radius:12px;border:2px solid var(--border);background:var(--paper);font-weight:800;font-size:14px;
+    cursor:pointer;font-family:inherit;color:var(--ink)}
+  .ch-chip:hover{border-color:var(--purple);background:#F3E9FF}
+  .ch-chip.shake{animation:chShake .35s;border-color:var(--red)}
+  .ch-erow{border:1px solid var(--border);border-radius:12px;padding:10px;margin-bottom:10px;background:#fff}
+  .ch-opts{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px}
+  .ch-rowfoot{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap}
+  .ch-grid3{display:grid;grid-template-columns:2fr 2fr 1fr;gap:6px}
+  .ch-live{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:10px 14px;font-size:13px;line-height:1.7;margin:10px 0}
+  @media (max-width:700px){.ch-opts,.ch-grid3{grid-template-columns:1fr}}
   #printArea{display:none}
   .print-page{font-family:Georgia,'Times New Roman',serif;padding:10px;text-align:center;color:#222}
   .print-page h1{font-size:20px;margin:0 0 2px}
@@ -239,11 +322,13 @@
     <button class="profile-chip" id="profileChip" onclick="openProfileModal()"><span class="pc-emoji">🐑</span><span id="profileChipText">Set up profile</span></button>
     <nav id="mainNav">
       <button class="active" data-screen="home" onclick="navTo('home',this)"><span class="navicon">🏠</span><span class="navlabel">Home</span></button>
-      <button data-screen="lesson" onclick="navTo('lesson',this)"><span class="navicon">📖</span><span class="navlabel">This Week</span></button>
+      <button data-screen="current" onclick="navTo('current',this)"><span class="navicon">🌟</span><span class="navlabel">Current Theme</span></button>
+      <button data-screen="lesson" onclick="navTo('lesson',this)"><span class="navicon">🗂️</span><span class="navlabel">Archives</span></button>
       <button data-screen="activity" onclick="navTo('activity',this)"><span class="navicon">🎮</span><span class="navlabel">Activities</span></button>
       <button data-screen="badges" onclick="go('badges',this)"><span class="navicon">🏆</span><span class="navlabel">My Badges</span></button>
-      <button data-screen="leaderboard" onclick="go('leaderboard',this)"><span class="navicon">📊</span><span class="navlabel">Leaderboard</span></button>
+      <button data-screen="leaderboard" onclick="go('leaderboard',this)"><span class="navicon">🥇</span><span class="navlabel">Leaderboard</span></button>
       <button data-screen="downloads" onclick="go('downloads',this)"><span class="navicon">📥</span><span class="navlabel">Downloads</span></button>
+      <button data-screen="reading" onclick="go('reading',this)"><span class="navicon">📖</span><span class="navlabel">Bible Reading</span></button>
       <button data-screen="teacher" onclick="go('teacher',this)"><span class="navicon">🧑‍🏫</span><span class="navlabel">Teacher</span></button>
     </nav>
     <div class="sidebar-foot" id="sidebarFoot">Learn it. Play it. Remember it. Live it.</div>
@@ -254,14 +339,23 @@
       <div style="display:flex;gap:10px;align-items:center">
         <span class="pill" id="syncPill" style="background:#F0E9F8;color:#6D4AA5">🔄 Connecting…</span>
         <span class="pill" id="pointsPill">⭐ 0 Adventure Points</span>
+        <span class="pill" id="challengePill" style="background:#FFF3D6;color:var(--gold-dark)">🏁 0 Challenge Points</span>
       </div>
     </div>
     <section id="home" class="screen active"></section>
+    <section id="current" class="screen"></section>
     <section id="lesson" class="screen"></section>
     <section id="activity" class="screen"></section>
     <section id="badges" class="screen"></section>
-    <section id="leaderboard" class="screen"></section>
+    <section id="leaderboard" class="screen">
+      <h1>🥇 Leaderboard</h1>
+      <div class="activity-nav" id="lbTabs" role="tablist"></div>
+      <div id="leaderboardWeek" class="lb-pane"></div>
+      <div id="leaderboardAll" class="lb-pane"></div>
+      <div id="leaderboardChallenge" class="lb-pane"></div>
+    </section>
     <section id="downloads" class="screen"></section>
+    <section id="reading" class="screen"></section>
     <section id="teacher" class="screen"></section>
   </main>
 </div>
@@ -327,11 +421,12 @@ const AGE_GROUPS = {
   '6-9':  {label:'Explorers',    range:'Ages 6–9',  emoji:'🐑'},
   '10-12':{label:'Voyagers',     range:'Ages 10–12',emoji:'🦁'}
 };
-const BLANK_PROGRESS = {completed:{}, scores:{}, playCounts:{}, points:0, whoAmICorrect:0, lastActive:null};
+const BLANK_PROGRESS = {completed:{}, scores:{}, playCounts:{}, points:0, whoAmICorrect:0, whoAmIByLesson:{}, lastActive:null};
 const MAX_LESSON_DOC_BYTES = 900000; // stay safely under Firestore's 1 MiB document limit
 
 /* ===================== STATE ===================== */
-let STATE = { lessons: [] };
+let STATE = { lessons: [], challenges: [] };
+let leaderboardTab = 'week';
 let PROFILES = [];
 let currentLessonId = null;
 let currentActivity = 'quiz';
@@ -344,10 +439,18 @@ try{ activeProfileId = localStorage.getItem('bibleAdventureActiveId') || null; }
 
 function normalizeProgress(p){
   const out = Object.assign({}, BLANK_PROGRESS, p||{});
-  out.completed = out.completed || {};
-  out.scores = out.scores || {};
-  out.playCounts = out.playCounts || {};
+  // Always hand back fresh nested objects: reusing BLANK_PROGRESS's own
+  // {} objects would let one child's (or a signed-out visitor's) activity
+  // leak into every other blank record.
+  out.completed = (p && p.completed) || {};
+  out.scores = (p && p.scores) || {};
+  out.playCounts = (p && p.playCounts) || {};
+  out.whoAmIByLesson = (p && p.whoAmIByLesson) || {};
   out.points = Number(out.points)||0;
+  // Weekly Challenge points live in their own bucket so they can never mix
+  // with Adventure Points, badges or the lesson leaderboards.
+  const ch = (p && p.challenge) || {};
+  out.challenge = {scores: ch.scores||{}, playCounts: ch.playCounts||{}, points: Number(ch.points)||0, lastActive: ch.lastActive||null};
   return out;
 }
 function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
@@ -367,10 +470,19 @@ function watchLessons(){
   if(!dbReady) return;
   const q = query(collection(db,'lessons'), orderBy('seq'));
   onSnapshot(q, snap=>{
-    STATE.lessons = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    const prevCurId = (pickCurrentLesson()||{}).id;   // the lesson that was "current" before this update
+    const everything = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    // Weekly challenges share the lessons collection (so no new Firestore
+    // rules are needed) but are kept out of every lesson list.
+    STATE.lessons = everything.filter(x=>x.kind!=='challenge');
+    STATE.challenges = everything.filter(x=>x.kind==='challenge');
     setSyncPill('ok');
     const current = currentLessonId ? STATE.lessons.find(l=>l.id===currentLessonId) : null;
     const currentIsPublished = current && (current.status||'Published')==='Published';
+    // If a child was on the current lesson and a newer one has just arrived, move them to the new one.
+    if(!teacherPreviewMode && currentLessonId && currentLessonId===prevCurId){
+      const nc = pickCurrentLesson(); if(nc) currentLessonId = nc.id;
+    }
     // A teacher previewing a Draft/Review lesson is allowed to keep viewing
     // it — only a child's own browsing gets swapped off a deactivated lesson.
     if(!currentLessonId || (!currentIsPublished && !teacherPreviewMode)){
@@ -386,21 +498,43 @@ function watchLessons(){
 }
 function isEditingLessonScreen(){
   const teacherScreen = document.getElementById('teacher');
-  return !!(teacherScreen && teacherScreen.classList.contains('active') && teacherSection==='editor');
+  return !!(teacherScreen && teacherScreen.classList.contains('active') && (teacherSection==='editor' || teacherSection==='challengeEditor'));
 }
 function getLesson(id){ return STATE.lessons.find(l=>l.id===id) || STATE.lessons[0] || null; }
 // Lessons children may browse/play. "Published" is the on position of the
 // teacher's activate/deactivate switch; Draft and Review are both off.
 function publishedLessons(){ return STATE.lessons.filter(l=>(l.status||'Published')==='Published'); }
-function parseLessonDate(s){ const t = Date.parse(String(s||'').replace(/^[A-Za-z]+,\s*/,'')); return isNaN(t)?null:t; }
+const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const WEEKDAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+// Reads "Sunday, 8 November 2026", "8 November 2026", "2026-11-08" and similar. Returns a timestamp, or null if unreadable.
+function parseLessonDate(s){
+  const str=String(s||'').trim(); if(!str) return null;
+  let m=str.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if(m) return new Date(+m[1],+m[2]-1,+m[3]).getTime();
+  const clean=str.replace(/^(mon|tue|wed|thu|fri|sat|sun)[a-z]*\.?,?\s+/i,'');
+  m=clean.match(/^(\d{1,2})(?:st|nd|rd|th)?\s+([A-Za-z]+)\.?,?\s+(\d{4})$/);
+  if(m){ const mi=MONTHS.findIndex(x=>x.toLowerCase().startsWith(m[2].toLowerCase().slice(0,3))); if(mi>=0) return new Date(+m[3],mi,+m[1]).getTime(); }
+  const t=Date.parse(clean); return isNaN(t)?null:t;
+}
+function formatLessonDate(ts){ const d=new Date(ts); return WEEKDAYS[d.getDay()]+', '+d.getDate()+' '+MONTHS[d.getMonth()]+' '+d.getFullYear(); }
+function dateToInput(ts){
+  if(ts===null||ts===undefined) return '';
+  const d=new Date(ts), z=n=>String(n).padStart(2,'0');
+  return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate());
+}
+// Newest first: latest date wins; if two lessons share a date the one uploaded last wins;
+// a lesson whose date cannot be read always sorts after lessons with a real date.
+function lessonNewerFirst(a,b){
+  const ta=parseLessonDate(a.date), tb=parseLessonDate(b.date);
+  if(ta!==tb){ if(ta===null) return 1; if(tb===null) return -1; return tb-ta; }
+  return (b.seq||0)-(a.seq||0);
+}
+// Current Theme = the published lesson with the LATEST date. Everything else is an archive.
 function pickCurrentLesson(){
   if(!STATE.lessons.length) return null;
-  const live = STATE.lessons.filter(l=>(l.status||'Published')==='Published');
+  const live = publishedLessons();
   const pool = live.length ? live : STATE.lessons;
-  const now = Date.now();
-  let best = pool[0], bestGap = Infinity;
-  pool.forEach(l=>{ const t=parseLessonDate(l.date); if(t===null) return; const gap=Math.abs(now-t); if(gap<bestGap){bestGap=gap; best=l;} });
-  return best;
+  return pool.slice().sort(lessonNewerFirst)[0];
 }
 function lessonImage(l){ return (l && typeof l.image==='string' && l.image.startsWith('data:image')) ? l.image : ''; }
 
@@ -461,7 +595,11 @@ function markCompleted(lessonId, activityType){
   PROGRESS.completed[lessonId][activityType] = true;
   PROGRESS.lastActive = Date.now();
 }
-function renderPointsPill(){ document.getElementById('pointsPill').textContent = '⭐ ' + (PROGRESS.points||0) + ' Adventure Points'; }
+function renderPointsPill(){
+  document.getElementById('pointsPill').textContent = '⭐ ' + (PROGRESS.points||0) + ' Adventure Points';
+  const cp = document.getElementById('challengePill');
+  if(cp) cp.textContent = '🏁 ' + ((PROGRESS.challenge && PROGRESS.challenge.points)||0) + ' Challenge Points';
+}
 
 /* ===================== PROFILE PICKER / EDITOR ===================== */
 let pendingAge = '6-9';
@@ -648,7 +786,11 @@ function refreshCurrentScreen(){
 }
 
 /* ===================== NAV ===================== */
+const LB_TABS = {leaderboardWeek:'week', leaderboardAll:'all', leaderboardChallenge:'challenge'};
 function go(id, btn){
+  // Old screen names still work: they open the matching Leaderboard tab / Challenge activity.
+  if(LB_TABS[id]){ leaderboardTab=LB_TABS[id]; id='leaderboard'; btn=null; }
+  else if(id==='challenge'){ currentActivity='challenge'; id='activity'; btn=null; }
   renderToken++;
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
@@ -656,17 +798,33 @@ function go(id, btn){
   const target = btn || document.querySelector('#mainNav button[data-screen="'+id+'"]');
   if(target) target.classList.add('active');
   if(id==='home') renderHome();
+  if(id==='current') renderCurrentTheme();
   if(id==='lesson') renderLessonScreen();
   if(id==='activity') renderActivityScreen();
   if(id==='badges') renderBadges();
-  if(id==='leaderboard') renderLeaderboard();
+  if(id==='leaderboard') renderLeaderboardPage();
   if(id==='downloads') renderDownloadsPage();
+  if(id==='reading') renderBibleReading();
   if(id==='teacher') renderTeacherGate();
   window.scrollTo({top:0, behavior:'instant'});
 }
 let teacherPreviewMode = false;
-function navTo(id, btn){ teacherPreviewMode=false; go(id, btn); }
-function openLesson(id){ teacherPreviewMode=false; currentLessonId=id; go('lesson'); }
+let archiveLessonId = null;   // which past lesson the Archives page is showing
+function navTo(id, btn){
+  teacherPreviewMode=false; challengePreviewMode=false;
+  // The Activities button always opens this week's lesson (a new lesson may have been published since last time).
+  if(id==='activity'){ const c=pickCurrentLesson(); if(c) currentLessonId=c.id; }
+  go(id, btn);
+}
+// Used by the Home page cards: this week's lesson lives on Current Theme,
+// every other lesson is shown in the Archives.
+function openLesson(id){
+  teacherPreviewMode=false; currentLessonId=id;
+  const cur = pickCurrentLesson();
+  if(cur && cur.id===id){ go('current'); }
+  else { archiveLessonId=id; go('lesson'); }
+}
+function selectArchiveLesson(id){ teacherPreviewMode=false; archiveLessonId=id; go('lesson'); }
 function openLessonActivities(id){ teacherPreviewMode=false; currentLessonId=id; currentActivity='quiz'; go('activity'); }
 
 function bannerFor(l){
@@ -688,8 +846,7 @@ function renderHome(){
   const visible = publishedLessons();
   if(!visible.length){ el.innerHTML = `<div class="banner warn">No lessons have been published yet. Sign in as a teacher to add the first one.</div>`; return; }
   const weeksDone = STATE.lessons.filter(l => PROGRESS.completed[l.id] && Object.keys(PROGRESS.completed[l.id]).length>=3).length;
-  let l0 = currentLessonId ? getLesson(currentLessonId) : null;
-  if(!l0 || (l0.status||'Published')!=='Published') l0 = pickCurrentLesson();
+  const l0 = pickCurrentLesson();   // the hero always shows this week's lesson
   const activeP = getActiveProfile();
   const greetName = (activeP && activeP.name) ? activeP.name : 'Bible Explorer';
   const img = lessonImage(l0);
@@ -701,7 +858,7 @@ function renderHome(){
         <div class="hero-title">${esc(l0.topic)}</div>
         <div class="hero-sub">${esc(l0.reference)} · ${esc(l0.story.title)}</div>
         <p>${esc(l0.story.summary.slice(0,140))}…</p>
-        <button class="btn" onclick="openLesson('${l0.id}')">Start this week</button>
+        <button class="btn" onclick="navTo('current')">Start this week</button>
       </div>
       ${img ? `<img class="hero-thumb" src="${img}" alt="Illustration for ${esc(l0.topic)}">` : `<div class="hero-emoji">🐑📖⭐</div>`}
     </div>
@@ -731,21 +888,10 @@ function progressPct(lessonId){
   return Math.round(Math.min(n,4)/4*100);
 }
 
-/* ===================== LESSON SCREEN ===================== */
-function renderLessonScreen(){
-  const el = document.getElementById('lesson');
-  if(!STATE.lessons.length){ el.innerHTML = `<div class="banner warn">No lessons yet.</div>`; return; }
-  const visible = publishedLessons();
-  if(!visible.length && !teacherPreviewMode){ el.innerHTML = `<div class="banner warn">No lessons have been published yet.</div>`; return; }
-  if(!teacherPreviewMode && (!currentLessonId || !visible.some(x=>x.id===currentLessonId))){
-    currentLessonId = pickCurrentLesson().id;
-  }
-  const l = getLesson(currentLessonId);
-  el.innerHTML = `
-    <h1>This week's lesson</h1>
-    <div class="toolbar">${visible.map(x=>`<button class="btn ${x.id===l.id?'':'secondary'}" onclick="openLesson('${x.id}')">${esc(x.date)}</button>`).join('')}</div>
-    ${teacherPreviewMode && (l.status||'Published')!=='Published' ? `<div class="banner warn">👀 Teacher preview — this lesson is currently <strong>${esc(lessonStatus(l))}</strong> and not visible to children.</div>` : ''}
-    ${bannerFor(l)}
+/* ===================== LESSON PAGES: Current Theme + Archives ===================== */
+// Shared layout for a lesson (banner, reading, story, points, confession, verse).
+function lessonDetailHTML(l, playLabel){
+  return `${bannerFor(l)}
     <div class="lesson-card">
       <p><strong>Bible reading:</strong> ${(l.bibleReading||[]).map(esc).join(' · ')}</p>
       <div class="grid grid2">
@@ -756,8 +902,45 @@ function renderLessonScreen(){
         <div class="smallcard"><h3>🙏 Confession</h3><p>${(l.confession||[]).map(esc).join('<br>')}</p></div>
         <div class="smallcard"><h3>📜 Memory verse</h3><p style="font-size:17px"><strong>“${esc(l.memoryVerse.text)}”</strong></p><p class="muted">${esc(l.memoryVerse.reference)}</p></div>
       </div>
-      <button class="btn" style="margin-top:14px" onclick="openLessonActivities('${l.id}')">Play this week's activities</button>
+      <button class="btn" style="margin-top:14px" onclick="openLessonActivities('${l.id}')">${esc(playLabel)}</button>
     </div>`;
+}
+// "Current Theme": always this week's lesson, same layout, no week picker.
+function renderCurrentTheme(){
+  const el = document.getElementById('current');
+  if(!STATE.lessons.length){ el.innerHTML = `<div class="banner warn">No lessons yet.</div>`; return; }
+  if(!publishedLessons().length){ el.innerHTML = `<div class="banner warn">No lessons have been published yet.</div>`; return; }
+  const l = pickCurrentLesson();
+  const hasPast = publishedLessons().some(x=>x.id!==l.id);
+  el.innerHTML = `<h1>This Week's Lesson</h1>${lessonDetailHTML(l, "Play this week's activities")}
+    ${hasPast?`<div class="toolbar" style="margin-top:14px"><button class="btn secondary" onclick="navTo('lesson',null)">🗂️ Past lessons in Archives</button></div>`:''}`;
+}
+// "Archives" (page id 'lesson'): every published lesson except the current one.
+function renderLessonScreen(){
+  const el = document.getElementById('lesson');
+  if(!STATE.lessons.length){ el.innerHTML = `<div class="banner warn">No lessons yet.</div>`; return; }
+  const visible = publishedLessons();
+  if(!visible.length && !teacherPreviewMode){ el.innerHTML = `<div class="banner warn">No lessons have been published yet.</div>`; return; }
+  const cur = pickCurrentLesson();
+  const past = visible.filter(x=>!cur || x.id!==cur.id)
+    .sort(lessonNewerFirst);   // newest first
+  const heading = teacherPreviewMode ? 'Lesson preview' : 'Past Lessons';
+  let l;
+  if(teacherPreviewMode){
+    l = getLesson(archiveLessonId || currentLessonId);
+  } else {
+    if(!past.length){
+      el.innerHTML = `<h1>${heading}</h1><div class="card"><p class="muted">No past lessons yet. When next week's lesson is published, this week's lesson will be kept here.</p></div>`;
+      return;
+    }
+    if(!archiveLessonId || !past.some(x=>x.id===archiveLessonId)) archiveLessonId = past[0].id;
+    l = getLesson(archiveLessonId);
+  }
+  el.innerHTML = `
+    <h1>${heading}</h1>
+    <div class="toolbar">${past.map(x=>`<button class="btn ${x.id===l.id?'':'secondary'}" onclick="selectArchiveLesson('${x.id}')">${esc(x.date)}</button>`).join('')}</div>
+    ${teacherPreviewMode && (l.status||'Published')!=='Published' ? `<div class="banner warn">👀 Teacher preview — this lesson is currently <strong>${esc(lessonStatus(l))}</strong> and not visible to children.</div>` : ''}
+    ${lessonDetailHTML(l, "Play this lesson's activities")}`;
 }
 
 /* ===================== ACTIVITY SCREEN ===================== */
@@ -771,15 +954,18 @@ function renderActivityScreen(){
   }
   const l = getLesson(currentLessonId);
   const types = [['quiz','🧠 Bible quiz'],['wordsearch','🔤 Word search'],['unscramble','🔀 Unscramble'],['memory','📜 Memory verse'],['whoami','🔎 Who am I?']];
+  if(ageKey()!=='3-5' && l.crosswordEnabled!==false && cwEntriesFor(l, ageKey()).length>=2) types.splice(2,0,['crossword','🧩 Crossword']);
   if(l.mazeEnabled !== false) types.push(['maze','🐾 Maze']);
   if(l.chooseBetter) types.push(['choose','💎 Choose the treasure']);
   if(l.coloringImage) types.push(['coloring','🎨 Coloring page']);
   if(ageKey()==='3-5') types.splice(1,0,['count','🔢 Counting fun']);
   if(ageKey()==='10-12') types.push(['deeper','🧭 Deeper dive']);
+  if((challengePreviewMode ? STATE.challenges : publishedChallenges()).length) types.push(['challenge','🏁 Weekly Challenge']);
   if(!types.some(t=>t[0]===currentActivity)) currentActivity='quiz';
-  const img = lessonImage(l);
+  const isChallenge = currentActivity==='challenge';
+  const img = isChallenge ? '' : lessonImage(l);
   el.innerHTML = `
-    <h1>Activity centre — ${esc(l.topic)} <span class="tag" style="vertical-align:middle">${AGE_GROUPS[ageKey()].emoji} ${esc(AGE_GROUPS[ageKey()].label)}</span></h1>
+    <h1>Activity centre — ${isChallenge?'Weekly Challenge':esc(l.topic)} <span class="tag" style="vertical-align:middle">${AGE_GROUPS[ageKey()].emoji} ${esc(AGE_GROUPS[ageKey()].label)}</span></h1>
     <div class="activity-nav">${types.map(([k,label])=>`<button class="${currentActivity===k?'active':''}" onclick="setActivity('${k}')">${label}</button>`).join('')}</div>
     <div class="activity-wrap">
       ${img?`<div class="activity-bg" style="background-image:url('${img}')"></div>`:''}
@@ -800,6 +986,8 @@ function renderActivityContent(){
   if(currentActivity==='deeper') return renderDeeperDive(l, box);
   if(currentActivity==='coloring') return renderColoring(l, box);
   if(currentActivity==='maze') return renderMaze(l, box);
+  if(currentActivity==='crossword') return renderCrossword(l, box);
+  if(currentActivity==='challenge') return renderChallengePanel(box);
 }
 function bankedLine(lessonId, type, max){
   const banked = (PROGRESS.scores[lessonId+':'+type]||{score:0}).score;
@@ -936,6 +1124,352 @@ function printWordSearch(withAnswers){
     <p class="print-footer">The Covenant Nation Lekki — Bible Adventure Sunday School</p>
   </div>`;
   window.print();
+}
+
+/* ---- Crossword (ages 6–9 and 10–12) ---- */
+const CW_MAX_LEN = 15;
+const CW_KEYS = [['6-9','tfCw69','🐑 Explorers (6–9)'],['10-12','tfCw1012','🦁 Voyagers (10–12)']];
+function cwCleanAnswer(s){ return String(s||'').toUpperCase().replace(/[^A-Z]/g,''); }
+function cwCleanEntries(raw){
+  const seen=new Set(), out=[];
+  (Array.isArray(raw)?raw:[]).forEach(e=>{
+    const a=cwCleanAnswer(e&&e.answer), clue=String((e&&e.clue)||'').trim();
+    if(a.length>=2 && a.length<=CW_MAX_LEN && clue && !seen.has(a)){ seen.add(a); out.push({answer:a, clue}); }
+  });
+  return out;
+}
+function cwEntriesFor(l, age){ return cwCleanEntries(l && l.crossword && l.crossword[age]); }
+
+/* Deterministic layout: the same words always give the same grid, so the
+   teacher's preview, the child's screen and the printed sheet all match. */
+function cwBuildLayout(entries){
+  const key=(r,c)=>r+','+c;
+  const byLen = entries.map((e,i)=>i).sort((a,b)=>entries[b].answer.length-entries[a].answer.length || a-b);
+  let best=null;
+  const tries=Math.min(byLen.length,12);
+  for(let t=0;t<tries;t++){
+    const order=[byLen[t]].concat(byLen.filter((_,k)=>k!==t));
+    const cells=new Map(), placed=[];
+    let minR=0,maxR=0,minC=0,maxC=0;
+    const canPlace=(w,r,c,dir)=>{
+      const dr=dir?1:0, dc=dir?0:1;
+      if(cells.has(key(r-dr,c-dc)) || cells.has(key(r+dr*w.length,c+dc*w.length))) return -1;
+      let cross=0;
+      for(let i=0;i<w.length;i++){
+        const rr=r+dr*i, cc=c+dc*i, ex=cells.get(key(rr,cc));
+        if(ex){ if(ex.ch!==w[i] || ex.dirs[dir]) return -1; cross++; }
+        else if(cells.has(key(rr+dc,cc+dr)) || cells.has(key(rr-dc,cc-dr))) return -1;
+      }
+      return cross;
+    };
+    const put=(idx,r,c,dir)=>{
+      const w=entries[idx].answer, dr=dir?1:0, dc=dir?0:1;
+      for(let i=0;i<w.length;i++){
+        const k=key(r+dr*i,c+dc*i), ex=cells.get(k);
+        if(ex) ex.dirs[dir]=true; else { const d=[false,false]; d[dir]=true; cells.set(k,{ch:w[i],dirs:d}); }
+      }
+      placed.push({idx,r,c,dir});
+      minR=Math.min(minR,r); minC=Math.min(minC,c);
+      maxR=Math.max(maxR,r+dr*(w.length-1)); maxC=Math.max(maxC,c+dc*(w.length-1));
+    };
+    put(order[0],0,0,0);
+    const remaining=order.slice(1);
+    let progress=true;
+    while(progress && remaining.length){
+      progress=false;
+      for(const idx of remaining.slice()){
+        const w=entries[idx].answer; let bestC=null;
+        cells.forEach((cell,k)=>{
+          const [cr,cc]=k.split(',').map(Number);
+          for(let i=0;i<w.length;i++){
+            if(w[i]!==cell.ch) continue;
+            for(const dir of [0,1]){
+              if(cell.dirs[dir]) continue;
+              const r=dir?cr-i:cr, c=dir?cc:cc-i;
+              const x=canPlace(w,r,c,dir); if(x<1) continue;
+              const nr=Math.max(maxR,dir?r+w.length-1:r)-Math.min(minR,r)+1;
+              const nc=Math.max(maxC,dir?c:c+w.length-1)-Math.min(minC,c)+1;
+              const score=x*30-nr*nc;
+              if(!bestC||score>bestC.score) bestC={score,r,c,dir};
+            }
+          }
+        });
+        if(bestC){ put(idx,bestC.r,bestC.c,bestC.dir); remaining.splice(remaining.indexOf(idx),1); progress=true; }
+      }
+    }
+    const area=(maxR-minR+1)*(maxC-minC+1);
+    const cand={placed,minR,minC,rows:maxR-minR+1,cols:maxC-minC+1,area,unplaced:remaining.slice()};
+    if(!best || placed.length>best.placed.length || (placed.length===best.placed.length && area<best.area)) best=cand;
+  }
+  const words=best.placed.map(p=>({answer:entries[p.idx].answer, clue:entries[p.idx].clue,
+    r:p.r-best.minR, c:p.c-best.minC, dir:p.dir, num:0}));
+  const starts=[...new Set(words.map(w=>w.r*1000+w.c))].sort((a,b)=>a-b);
+  words.forEach(w=>{ w.num=starts.indexOf(w.r*1000+w.c)+1; });
+  words.sort((a,b)=>a.num-b.num || a.dir-b.dir);
+  const grid=Array.from({length:best.rows},()=>Array(best.cols).fill(''));
+  const starting={}; // "r,c" -> number
+  words.forEach(w=>{
+    starting[w.r+','+w.c]=w.num;
+    for(let i=0;i<w.answer.length;i++) grid[w.r+(w.dir?i:0)][w.c+(w.dir?0:i)]=w.answer[i];
+  });
+  return {rows:best.rows, cols:best.cols, grid, words, starting, unplaced:best.unplaced.map(i=>entries[i])};
+}
+
+/* ---- Crossword: child game ---- */
+let cwLayout=null, cwVals={}, cwInputs={}, cwCellWords={}, cwActive=null, cwDir=0, cwCur=null, cwPrevCell=null,
+    cwHints=0, cwSolved=new Set(), cwFinished=false, cwLessonId=null;
+function cwWordCells(w){ const out=[]; for(let i=0;i<w.answer.length;i++) out.push([w.r+(w.dir?i:0), w.c+(w.dir?0:i)]); return out; }
+function renderCrossword(l, box){
+  const age=ageKey(), entries=cwEntriesFor(l, age);
+  if(entries.length<2){ box.innerHTML=`<h2>🧩 Crossword</h2><p class="muted">No crossword has been set up for this week yet.</p>`; return; }
+  cwLayout=cwBuildLayout(entries); cwLessonId=l.id;
+  cwVals={}; cwInputs={}; cwCellWords={}; cwActive=null; cwDir=0; cwCur=null; cwPrevCell=null;
+  cwHints=0; cwSolved=new Set(); cwFinished=false;
+  const {rows,cols,grid,words,starting}=cwLayout;
+  words.forEach((w,i)=>cwWordCells(w).forEach(([r,c])=>{ const k=r+','+c; (cwCellWords[k]=cwCellWords[k]||[null,null])[w.dir]=i; }));
+  const base = age==='10-12' ? 36 : 42;
+  const wide = box.clientWidth>860;
+  const avail = wide ? Math.floor(box.clientWidth*0.55) : Math.max(240, box.clientWidth-48);
+  const cell = Math.max(22, Math.min(base, Math.floor((avail-(cols-1)*2)/cols)));
+  let gridHTML='';
+  for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){
+    if(!grid[r][c]){ gridHTML+=`<div class="cw-blank"></div>`; continue; }
+    const n=starting[r+','+c];
+    gridHTML+=`<div class="cw-cell">${n?`<span class="cw-num">${n}</span>`:''}<input type="text" maxlength="2" data-r="${r}" data-c="${c}" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" aria-label="Row ${r+1}, column ${c+1}${n?', clue '+n:''}"></div>`;
+  }
+  const clueList=(dir)=>words.map((w,i)=>({w,i})).filter(x=>x.w.dir===dir).map(({w,i})=>
+    `<li><button type="button" class="cw-clue" id="cwc-${i}" onclick="cwClueClick(${i})"><b>${w.num}.</b> <span class="cw-ct">${esc(w.clue)}</span> <span class="muted">(${w.answer.length})</span></button></li>`).join('');
+  const bank = age==='6-9'
+    ? `<div class="wordlist" aria-label="Word bank">${words.map((w,i)=>({a:w.answer,i})).sort((x,y)=>x.a.localeCompare(y.a)).map(x=>`<span id="cwb-${x.i}">${esc(x.a)}</span>`).join('')}</div>` : '';
+  box.innerHTML=`<h2>🧩 Crossword</h2>
+    <p class="muted">Tap a square and type. Tap the same square again to switch between across and down. ${age==='6-9'?'The word bank shows every answer. ':''}Finish without hints for a 15-point bonus!</p>
+    ${bank}
+    <div class="cw-now" id="cwNow" aria-live="polite">Tap a square to begin.</div>
+    <div class="cw-layout">
+      <div class="grid-scroll"><div class="cw-grid" id="cwGridEl" style="grid-template-columns:repeat(${cols},${cell}px);--cw:${cell}px">${gridHTML}</div></div>
+      <div class="cw-clues"><div><h3>➡️ Across</h3><ol>${clueList(0)}</ol></div><div><h3>⬇️ Down</h3><ol>${clueList(1)}</ol></div></div>
+    </div>
+    <div class="toolbar">
+      <button class="btn green" onclick="cwCheck()">✅ Check my answers</button>
+      <button class="btn gold" onclick="cwHint()">💡 Hint</button>
+      <button class="btn secondary" onclick="printCrossword(false)">🖨️ Print worksheet</button>
+      <button class="btn secondary" onclick="printCrossword(true)">🖨️ Print answer key</button>
+    </div>
+    <div id="cwFeedback" class="feedback" role="status"></div><div id="cwDone"></div>`;
+  const gridEl=document.getElementById('cwGridEl');
+  gridEl.querySelectorAll('input').forEach(inp=>{ cwInputs[inp.dataset.r+','+inp.dataset.c]=inp; });
+  gridEl.addEventListener('pointerdown', ()=>{ cwPrevCell=cwCur?{r:cwCur.r,c:cwCur.c}:null; }, true);
+  gridEl.addEventListener('focusin', e=>{ if(e.target.matches('input')) cwSetActive(+e.target.dataset.r,+e.target.dataset.c,false); });
+  gridEl.addEventListener('click', e=>{
+    if(!e.target.matches('input')) return;
+    const r=+e.target.dataset.r, c=+e.target.dataset.c;
+    if(cwPrevCell && cwPrevCell.r===r && cwPrevCell.c===c) cwSetActive(r,c,true);
+    e.target.select();
+  });
+  gridEl.addEventListener('input', e=>{ if(e.target.matches('input')) cwOnInput(e.target); });
+  gridEl.addEventListener('keydown', cwOnKey);
+}
+function cwSetActive(r,c,toggle){
+  const w=cwCellWords[r+','+c]; if(!w) return;
+  let dir=cwDir;
+  if(w[dir]===null) dir=dir?0:1;
+  else if(toggle && w[dir?0:1]!==null) dir=dir?0:1;
+  cwDir=dir; cwActive=w[dir]; cwCur={r,c};
+  cwHighlight();
+}
+function cwHighlight(){
+  document.querySelectorAll('#cwGridEl .cw-cell').forEach(el=>el.classList.remove('cw-word','cw-cur'));
+  document.querySelectorAll('.cw-clue').forEach(b=>b.classList.remove('active'));
+  if(cwActive===null) return;
+  const w=cwLayout.words[cwActive];
+  cwWordCells(w).forEach(([r,c])=>cwInputs[r+','+c].parentElement.classList.add('cw-word'));
+  if(cwCur && cwInputs[cwCur.r+','+cwCur.c]) cwInputs[cwCur.r+','+cwCur.c].parentElement.classList.add('cw-cur');
+  const b=document.getElementById('cwc-'+cwActive); if(b) b.classList.add('active');
+  const now=document.getElementById('cwNow');
+  if(now) now.innerHTML=`<b>${w.num} ${w.dir?'Down':'Across'}:</b> ${esc(w.clue)} <span class="muted">(${w.answer.length} letters)</span>`;
+}
+function cwFocus(r,c){ const inp=cwInputs[r+','+c]; if(inp){ inp.focus(); inp.select(); } }
+function cwStep(r,c,step){
+  if(cwActive===null) return null;
+  const cells=cwWordCells(cwLayout.words[cwActive]);
+  const i=cells.findIndex(x=>x[0]===r&&x[1]===c);
+  return i<0 ? null : (cells[i+step]||null);
+}
+function cwOnInput(inp){
+  const r=+inp.dataset.r, c=+inp.dataset.c, k=r+','+c;
+  const ch=inp.value.replace(/[^a-zA-Z]/g,'').slice(-1).toUpperCase();
+  inp.value=ch; cwVals[k]=ch;
+  inp.parentElement.classList.remove('wrong','hint');
+  cwEvaluate();
+  if(ch){ const nx=cwStep(r,c,1); if(nx) cwFocus(nx[0],nx[1]); }
+}
+function cwOnKey(e){
+  const inp=e.target; if(!inp.matches || !inp.matches('input')) return;
+  const r=+inp.dataset.r, c=+inp.dataset.c;
+  const arrows={ArrowLeft:[0,-1],ArrowRight:[0,1],ArrowUp:[-1,0],ArrowDown:[1,0]};
+  if(arrows[e.key]){
+    e.preventDefault();
+    const [dr,dc]=arrows[e.key]; let rr=r+dr, cc=c+dc;
+    while(rr>=0&&cc>=0&&rr<cwLayout.rows&&cc<cwLayout.cols){
+      if(cwInputs[rr+','+cc]){ cwDir = dr===0?0:1; cwFocus(rr,cc); return; }
+      rr+=dr; cc+=dc;
+    }
+    return;
+  }
+  if(e.key==='Backspace' && !inp.value){
+    e.preventDefault();
+    const pv=cwStep(r,c,-1);
+    if(pv){ const pi=cwInputs[pv[0]+','+pv[1]]; pi.value=''; cwVals[pv[0]+','+pv[1]]=''; pi.parentElement.classList.remove('wrong','hint'); cwEvaluate(); cwFocus(pv[0],pv[1]); }
+  }
+}
+function cwClueClick(i){
+  const w=cwLayout.words[i]; cwDir=w.dir;
+  const [r,c]=cwWordCells(w)[0];
+  cwFocus(r,c);
+}
+function cwEvaluate(){
+  const words=cwLayout.words, solved=new Set();
+  document.querySelectorAll('#cwGridEl .cw-cell').forEach(el=>el.classList.remove('solved'));
+  words.forEach((w,i)=>{
+    const cells=cwWordCells(w);
+    const ok=cells.every(([r,c],k)=>cwVals[r+','+c]===w.answer[k]);
+    const btn=document.getElementById('cwc-'+i), chip=document.getElementById('cwb-'+i);
+    if(btn) btn.classList.toggle('done',ok);
+    if(chip) chip.classList.toggle('done',ok);
+    if(ok){ solved.add(i); cells.forEach(([r,c])=>cwInputs[r+','+c].parentElement.classList.add('solved')); }
+  });
+  const prev=cwSolved.size; cwSolved=solved;
+  const n=words.length, all=solved.size===n, maxScore=n*5+15;
+  if(solved.size>prev || (all && !cwFinished)){
+    recordActivityScore(cwLessonId,'crossword', solved.size*5+(all&&cwHints===0?15:0), maxScore, all&&!cwFinished);
+  }
+  const fb=document.getElementById('cwFeedback');
+  if(all && !cwFinished){
+    cwFinished=true;
+    if(fb){ fb.textContent=cwHints===0?'🎉 Crossword complete — no hints needed!':'🎉 Crossword complete!'; fb.style.color='#1E8A4C'; }
+    const done=document.getElementById('cwDone');
+    if(done) done.innerHTML=`<p class="muted">${bankedLine(cwLessonId,'crossword',maxScore)}</p>${againBar(`renderCrossword(getLesson('${cwLessonId}'),document.getElementById('activityBox'))`)}`;
+  } else if(solved.size>prev && fb){
+    fb.textContent=`Well done! ${solved.size} of ${n} words solved.`; fb.style.color='#1E8A4C';
+  }
+}
+function cwCheck(){
+  if(!cwLayout) return;
+  let wrong=0, filled=0;
+  Object.keys(cwInputs).forEach(k=>{
+    const [r,c]=k.split(',').map(Number), v=cwVals[k]||'', el=cwInputs[k].parentElement;
+    el.classList.remove('wrong');
+    if(v){ filled++; if(v!==cwLayout.grid[r][c]){ el.classList.add('wrong'); wrong++; } }
+  });
+  const fb=document.getElementById('cwFeedback'); if(!fb) return;
+  if(wrong){ fb.textContent=`${wrong} letter${wrong===1?' needs':'s need'} another look (marked in red).`; fb.style.color='#D14343'; }
+  else if(!filled){ fb.textContent='Type some letters first, then check.'; fb.style.color='#6B6178'; }
+  else if(!cwFinished){ fb.textContent='So far so good — keep going!'; fb.style.color='#1E8A4C'; }
+}
+function cwHint(){
+  if(!cwLayout || cwFinished) return;
+  const words=cwLayout.words;
+  const missing=w=>cwWordCells(w).findIndex(([r,c],k)=>cwVals[r+','+c]!==w.answer[k]);
+  let w = cwActive!==null ? words[cwActive] : null;
+  if(!w || missing(w)<0) w = words.find(x=>missing(x)>=0);
+  if(!w) return;
+  const [r,c]=cwWordCells(w)[missing(w)], k=r+','+c;
+  cwVals[k]=w.answer[missing(w)];
+  cwInputs[k].value=cwVals[k];
+  cwInputs[k].parentElement.classList.remove('wrong');
+  cwInputs[k].parentElement.classList.add('hint');
+  cwHints++;
+  cwActive=words.indexOf(w); cwDir=w.dir; cwCur={r,c}; cwHighlight();
+  cwEvaluate();
+  const fb=document.getElementById('cwFeedback');
+  if(fb && !cwFinished){ fb.textContent='💡 One letter revealed (the no-hints bonus is gone, but you can still finish!)'; fb.style.color='#2E6FB0'; }
+}
+function printCrossword(withAnswers){
+  if(!cwLayout) return;
+  const l=getLesson(currentLessonId), {rows,cols,grid,words,starting}=cwLayout;
+  let table='';
+  for(let r=0;r<rows;r++){
+    table+='<tr>';
+    for(let c=0;c<cols;c++){
+      if(!grid[r][c]){ table+='<td></td>'; continue; }
+      const n=starting[r+','+c];
+      table+=`<td class="pc">${n?`<span class="pn">${n}</span>`:''}${withAnswers?esc(grid[r][c]):''}</td>`;
+    }
+    table+='</tr>';
+  }
+  const list=(dir)=>words.filter(w=>w.dir===dir).map(w=>`<p><b>${w.num}.</b> ${esc(w.clue)} (${w.answer.length})</p>`).join('');
+  document.getElementById('printArea').innerHTML=`<div class="print-page">
+    <h1>🌟 Bible Adventure — Crossword</h1>
+    <p class="print-sub">${esc(l?.topic||'')}${l?.date?' · '+esc(l.date):''}${withAnswers?' — Answer key':''}</p>
+    ${withAnswers?'':'<p class="print-name">Name: ______________________________</p>'}
+    <table class="print-cw">${table}</table>
+    <div class="print-clues"><div><h3>Across</h3>${list(0)}</div><div><h3>Down</h3>${list(1)}</div></div>
+    <p class="print-footer">The Covenant Nation Lekki — Bible Adventure Sunday School</p>
+  </div>`;
+  window.print();
+}
+
+/* ---- Crossword: teacher editor ---- */
+let teacherCrossword={'6-9':[{answer:'',clue:''}],'10-12':[{answer:'',clue:''}]};
+function cwEditorInit(editing){
+  CW_KEYS.forEach(([k])=>{
+    const arr=editing && editing.crossword && editing.crossword[k];
+    teacherCrossword[k]=(Array.isArray(arr)&&arr.length) ? arr.map(e=>({answer:e.answer||'',clue:e.clue||''})) : [{answer:'',clue:''}];
+  });
+}
+function cwUpdateLen(k,i){
+  const el=document.getElementById(`cwlen-${k}-${i}`); if(!el) return;
+  const raw=(teacherCrossword[k][i]||{}).answer||'', n=cwCleanAnswer(raw).length;
+  if(!raw.trim()){ el.textContent=''; return; }
+  if(n<2){ el.textContent='Needs 2+ letters'; el.style.color='#D14343'; }
+  else if(n>CW_MAX_LEN){ el.textContent=`${n} letters — max ${CW_MAX_LEN}`; el.style.color='#D14343'; }
+  else { el.textContent=`${n} letters`; el.style.color=''; }
+}
+function renderCrosswordEditor(){
+  CW_KEYS.forEach(([k,id])=>{
+    const wrap=document.getElementById(id); if(!wrap) return;
+    const rows=teacherCrossword[k];
+    wrap.innerHTML=rows.map((e,i)=>`
+      <div class="cw-erow">
+        <div class="cw-ecol-a"><input class="input cw-ans" data-i="${i}" placeholder="ANSWER" maxlength="40" autocapitalize="characters" value="${esc(e.answer)}"><span class="muted" id="cwlen-${k}-${i}"></span></div>
+        <input class="input cw-clue-in" data-i="${i}" placeholder="Clue the children will read" value="${esc(e.clue)}">
+        ${rows.length>1?`<button type="button" class="btn secondary" style="padding:8px 12px" onclick="cwRemoveRow('${k}',${i})">Remove</button>`:''}
+      </div>`).join('');
+    wrap.querySelectorAll('.cw-ans').forEach(el=>el.addEventListener('input',ev=>{
+      const i=Number(ev.target.dataset.i); if(teacherCrossword[k][i]){ teacherCrossword[k][i].answer=ev.target.value; cwUpdateLen(k,i); } }));
+    wrap.querySelectorAll('.cw-clue-in').forEach(el=>el.addEventListener('input',ev=>{
+      const i=Number(ev.target.dataset.i); if(teacherCrossword[k][i]) teacherCrossword[k][i].clue=ev.target.value; }));
+    rows.forEach((_,i)=>cwUpdateLen(k,i));
+  });
+}
+function cwAddRow(k){ teacherCrossword[k].push({answer:'',clue:''}); renderCrosswordEditor(); }
+function cwRemoveRow(k,i){ teacherCrossword[k].splice(i,1); if(!teacherCrossword[k].length) teacherCrossword[k]=[{answer:'',clue:''}]; renderCrosswordEditor(); }
+function cwFillVocab(k){
+  const vocab=val('tfVocab').split(',').map(cwCleanAnswer).filter(a=>a.length>=2&&a.length<=CW_MAX_LEN);
+  if(!vocab.length){ alert('Type some vocabulary words into the “Vocabulary for games” box first.'); return; }
+  let rows=teacherCrossword[k].filter(e=>(e.answer||'').trim()||(e.clue||'').trim());
+  const have=new Set(rows.map(e=>cwCleanAnswer(e.answer)));
+  vocab.forEach(a=>{ if(!have.has(a)){ have.add(a); rows.push({answer:a,clue:''}); } });
+  teacherCrossword[k]=rows; renderCrosswordEditor();
+}
+function cwMiniPreview(entries){
+  const L=cwBuildLayout(entries);
+  let t='';
+  for(let r=0;r<L.rows;r++){ t+='<tr>'; for(let c=0;c<L.cols;c++){
+    const ch=L.grid[r][c];
+    t+= ch ? `<td class="on">${L.starting[r+','+c]?`<span class="pn">${L.starting[r+','+c]}</span>`:''}${esc(ch)}</td>` : '<td></td>';
+  } t+='</tr>'; }
+  const warn=L.unplaced.length
+    ? `<p class="muted" style="color:#D14343">Could not fit: <b>${L.unplaced.map(e=>esc(e.answer)).join(', ')}</b>. Each word must share a letter with another word — change it or add a word that links them. Children will not see these words.</p>` : '';
+  return `<div class="grid-scroll"><table class="cw-mini">${t}</table></div>
+    <p class="muted">Placed ${L.words.length} of ${entries.length} words in a ${L.rows}×${L.cols} grid. This is exactly what children will see.</p>${warn}`;
+}
+function cwPreview(k){
+  const out=document.getElementById('cwprev-'+k); if(!out) return;
+  const entries=cwCleanEntries(teacherCrossword[k]);
+  out.innerHTML = entries.length<2
+    ? `<p class="muted" style="color:#D14343">Add at least 2 words (each with a clue) to see a preview.</p>`
+    : cwMiniPreview(entries);
 }
 
 /* ---- Coloring page ---- */
@@ -1578,7 +2112,10 @@ function answerWhoAmI(el, chosen, correctName){
   const token=renderToken; const fb=document.getElementById('waiFeedback');
   document.querySelectorAll('#activityBox .option').forEach(o=>o.onclick=null);
   if(chosen===correctName){ el.classList.add('correct'); fb.textContent='🎉 Correct! You discovered '+correctName+'.'; fb.style.color='#1E8A4C';
-    waiScore++; PROGRESS.whoAmICorrect=(PROGRESS.whoAmICorrect||0)+1; persistProgress();
+    waiScore++; PROGRESS.whoAmICorrect=(PROGRESS.whoAmICorrect||0)+1;
+    PROGRESS.whoAmIByLesson = PROGRESS.whoAmIByLesson || {};
+    PROGRESS.whoAmIByLesson[currentLessonId] = (PROGRESS.whoAmIByLesson[currentLessonId]||0)+1;   // lets the weekly leaderboard count this week's clues
+    persistProgress();
   } else { el.classList.add('wrong'); fb.textContent='Not quite — the answer was '+correctName+'.'; fb.style.color='#D14343'; }
   waiIndex++;
   setTimeout(()=>{ if(token!==renderToken) return; renderWhoAmI(getLesson(currentLessonId), document.getElementById('activityBox'), false); }, 1400);
@@ -1790,7 +2327,7 @@ function renderBadges(){
     }).join('')}`;
 }
 
-/* ===================== LEADERBOARD (top 5, all children) ===================== */
+/* ===================== LEADERBOARDS: weekly + overall ===================== */
 function leaderboardRows(ranked, emojiFn){
   const medals = ['🥇','🥈','🥉'];
   return ranked.map((r,i)=>`<div class="leader-row ${i===0?'rank-1':''}">
@@ -1800,39 +2337,138 @@ function leaderboardRows(ranked, emojiFn){
     <div class="leader-points">${emojiFn(r)}</div>
   </div>`).join('');
 }
-async function renderLeaderboard(){
-  const el = document.getElementById('leaderboard');
-  const token = renderToken;
-  el.innerHTML = `<h1>🏆 Leaderboard</h1><div class="card"><p class="muted">Loading the top adventurers…</p></div>`;
-  let all = {};
-  try{ all = await fetchAllProgress(); }catch(e){ /* fall through with empty results */ }
-  if(token !== renderToken) return; // a newer screen loaded while we were fetching
-  // Points board: raw progress.points, no normalization needed (reads one field).
-  const byPoints = PROFILES
-    .map(p=>({p, points:(all[p.id] && all[p.id].points) || 0}))
-    .sort((a,b)=>b.points-a.points || (a.p.name||'').localeCompare(b.p.name||''))
-    .slice(0,30);
-  // Badges board: tiers are computed from several progress fields, so each
-  // child's raw doc is normalized first (fills in completed/scores/playCounts
-  // etc. when a child has never played) before scoring it against BADGE_FAMILIES.
-  const byBadges = PROFILES
-    .map(p=>({p, badges: countBadges(normalizeProgress(all[p.id]||{}))}))
-    .sort((a,b)=>b.badges-a.badges || (a.p.name||'').localeCompare(b.p.name||''))
-    .slice(0,30);
-  el.innerHTML = `<h1>🏆 Leaderboard</h1>
-    <div class="grid grid2">
+// The two side-by-side boards shared by the weekly and overall pages.
+function leaderboardCards(o){
+  return `<div class="grid grid2">
       <div class="card">
         <h2>⭐ Top 30 Bible Adventurers by Points</h2>
-        <p class="muted">Ranked by adventure points earned across every lesson. Keep reading, playing and remembering to climb the list!</p>
-        ${byPoints.length===0 ? `<p class="muted">No one has earned points yet — be the first!</p>` :
-          leaderboardRows(byPoints, r=>`⭐ ${r.points}`)}
+        <p class="muted">${o.pointsNote}</p>
+        ${o.byPoints.length===0 ? `<p class="muted">${o.emptyPoints}</p>` : leaderboardRows(o.byPoints, r=>`⭐ ${r.points}`)}
       </div>
       <div class="card">
         <h2>🏅 Top 30 Bible Adventurers by Badges Earned</h2>
-        <p class="muted">Ranked by badge tiers earned across all 8 badge families (out of ${BADGE_FAMILIES.length*5} possible). Try every kind of activity to climb this one!</p>
-        ${byBadges.length===0 ? `<p class="muted">No one has earned a badge yet — be the first!</p>` :
-          leaderboardRows(byBadges, r=>`🏅 ${r.badges}`)}
+        <p class="muted">${o.badgesNote}</p>
+        ${o.byBadges.length===0 ? `<p class="muted">${o.emptyBadges}</p>` : leaderboardRows(o.byBadges, r=>`🏅 ${r.badges}`)}
       </div>
+    </div>`;
+}
+const byNameTiebreak = (a,b)=>(a.p.name||'').localeCompare(b.p.name||'');
+
+/* ---- Weekly: only what a child did in one lesson's week ----
+   Progress is stored per activity under "<lessonId>:<activity>", so a week's
+   points are simply that lesson's banked scores. Badge tiers are cumulative,
+   so "badges earned this week" = tiers now minus tiers without this week's
+   activity. (Who-am-I clues are counted per lesson from this update onward.) */
+function weeklyPoints(prog, lessonId){
+  const pre = lessonId+':';
+  return Object.keys(prog.scores||{}).filter(k=>k.startsWith(pre))
+    .reduce((s,k)=>s+(Number(prog.scores[k].score)||0), 0);
+}
+function progressWithoutLesson(prog, lessonId){
+  const pre = lessonId+':';
+  const dropKeys = obj => Object.fromEntries(Object.entries(obj||{}).filter(([k])=>!k.startsWith(pre)));
+  return Object.assign({}, prog, {
+    scores: dropKeys(prog.scores),
+    playCounts: dropKeys(prog.playCounts),
+    completed: Object.fromEntries(Object.entries(prog.completed||{}).filter(([k])=>k!==lessonId)),
+    points: Math.max(0, (Number(prog.points)||0) - weeklyPoints(prog, lessonId)),
+    whoAmICorrect: Math.max(0, (prog.whoAmICorrect||0) - ((prog.whoAmIByLesson||{})[lessonId]||0))
+  });
+}
+function weeklyBadges(prog, lessonId){
+  return Math.max(0, countBadges(prog) - countBadges(progressWithoutLesson(prog, lessonId)));
+}
+let weeklyBoardLessonId = null;   // null = the current week
+function selectWeeklyBoardLesson(id){ weeklyBoardLessonId = id; renderWeeklyLeaderboard(); }
+async function renderWeeklyLeaderboard(){
+  const el = document.getElementById('leaderboardWeek');
+  const token = renderToken;
+  const visible = publishedLessons();
+  if(!visible.length){ el.innerHTML = `<h1>📅 Leaderboard for the Week</h1><div class="banner warn">No lessons have been published yet.</div>`; return; }
+  const cur = pickCurrentLesson();
+  const lesson = visible.find(x=>x.id===weeklyBoardLessonId) || cur;
+  const weeks = visible.slice().sort(lessonNewerFirst);
+  const header = `<h1>📅 Leaderboard for the Week</h1>
+    <div class="toolbar">${weeks.map(x=>`<button class="btn ${x.id===lesson.id?'':'secondary'}" onclick="selectWeeklyBoardLesson('${x.id}')">${esc(x.date)}${x.id===cur.id?' · this week':''}</button>`).join('')}</div>
+    <p class="muted">Only activity from <strong>${esc(lesson.topic)}</strong> (${esc(lesson.date)}) counts on this page.</p>`;
+  el.innerHTML = header + `<div class="card"><p class="muted">Loading the top adventurers…</p></div>`;
+  let all = {};
+  try{ all = await fetchAllProgress(); }catch(e){ /* fall through with empty results */ }
+  if(token !== renderToken) return; // a newer screen loaded while we were fetching
+  const rows = PROFILES.map(p=>{
+    const prog = normalizeProgress(all[p.id]||{});
+    return {p, points: weeklyPoints(prog, lesson.id), badges: weeklyBadges(prog, lesson.id)};
+  });
+  // Children who did nothing that week are left off, so the board starts empty each week.
+  const byPoints = rows.filter(r=>r.points>0).sort((a,b)=>b.points-a.points || byNameTiebreak(a,b)).slice(0,30);
+  const byBadges = rows.filter(r=>r.badges>0).sort((a,b)=>b.badges-a.badges || byNameTiebreak(a,b)).slice(0,30);
+  el.innerHTML = header + leaderboardCards({
+    byPoints, byBadges,
+    pointsNote: `Ranked by adventure points earned from the week shown above.`,
+    badgesNote: `Ranked by badge tiers unlocked during the week shown above.`,
+    emptyPoints: `No one has earned points this week yet — be the first!`,
+    emptyBadges: `No one has earned a badge this week yet — be the first!`
+  });
+}
+
+/* ---- Overall: everything since the app launched ---- */
+async function renderOverallLeaderboard(){
+  const el = document.getElementById('leaderboardAll');
+  const token = renderToken;
+  const title = `<h1>📊 Overall Leaderboard</h1><p class="muted">Everything earned since the app launched.</p>`;
+  el.innerHTML = title + `<div class="card"><p class="muted">Loading the top adventurers…</p></div>`;
+  let all = {};
+  try{ all = await fetchAllProgress(); }catch(e){ /* fall through with empty results */ }
+  if(token !== renderToken) return;
+  // Points board reads one field; the badges board scores each child's normalized progress.
+  const byPoints = PROFILES
+    .map(p=>({p, points:(all[p.id] && all[p.id].points) || 0}))
+    .sort((a,b)=>b.points-a.points || byNameTiebreak(a,b)).slice(0,30);
+  const byBadges = PROFILES
+    .map(p=>({p, badges: countBadges(normalizeProgress(all[p.id]||{}))}))
+    .sort((a,b)=>b.badges-a.badges || byNameTiebreak(a,b)).slice(0,30);
+  el.innerHTML = title + leaderboardCards({
+    byPoints, byBadges,
+    pointsNote: `Ranked by adventure points earned across every lesson. Keep reading, playing and remembering to climb the list!`,
+    badgesNote: `Ranked by badge tiers earned across all ${BADGE_FAMILIES.length} badge families (out of ${BADGE_FAMILIES.length*5} possible). Try every kind of activity to climb this one!`,
+    emptyPoints: `No one has earned points yet — be the first!`,
+    emptyBadges: `No one has earned a badge yet — be the first!`
+  });
+}
+
+/* ===================== BIBLE READING (weekly plan by age group) ===================== */
+function readingPlanFor(l, key){
+  const rp = l && l.readingPlan;
+  return (rp && Array.isArray(rp[key])) ? rp[key].map(x=>String(x).trim()).filter(Boolean) : [];
+}
+function renderBibleReading(){
+  const el = document.getElementById('reading');
+  if(!STATE.lessons.length || !publishedLessons().length){
+    el.innerHTML = `<h1>📖 Bible Reading</h1><div class="banner warn">No lessons have been published yet.</div>`; return;
+  }
+  const l = pickCurrentLesson();
+  const key = ageKey(), g = AGE_GROUPS[key];
+  const plan = readingPlanFor(l, key);
+  const fallback = (l.bibleReading||[]).filter(Boolean);
+  let body;
+  if(plan.length){
+    body = plan.map((item,i)=>`<div class="reading-item"><div class="reading-num">${i+1}</div><div>${esc(item)}</div></div>`).join('');
+  } else if(fallback.length){
+    body = `<p class="muted">Your teacher hasn't added a day-by-day plan for ${esc(g.label)} yet. This week's Bible reading is:</p>`
+      + fallback.map((item,i)=>`<div class="reading-item"><div class="reading-num">${i+1}</div><div>${esc(item)}</div></div>`).join('');
+  } else {
+    body = `<p class="muted">No Bible reading has been added for this week yet.</p>`;
+  }
+  el.innerHTML = `<h1>📖 Bible Reading</h1>
+    <p class="muted">${g.emoji} ${esc(g.label)} · ${esc(g.range)}${getActiveProfile() ? '' : ' — choose your name in the menu to see the plan for your own age group.'}</p>
+    <div class="card">
+      <div class="tag">This week's theme</div>
+      <h2 style="margin-top:8px">${esc(l.topic)}</h2>
+      <p class="muted">${esc(l.story.title)} — ${esc(l.story.reference)}</p>
+    </div>
+    <div class="card" style="margin-top:14px">
+      <h2>Your reading plan for the week</h2>
+      ${body}
     </div>`;
 }
 
@@ -1931,12 +2567,12 @@ function renderCharacterSummary(){
 function addCharacterRow(){ teacherCharacters.push({name:'',clue:''}); renderCharacterRows(); }
 function removeCharacterRow(i){ teacherCharacters.splice(i,1); if(!teacherCharacters.length) teacherCharacters=[{name:'',clue:''}]; renderCharacterRows(); }
 function cancelEdit(){ editingLessonId=null; teacherCharactersInitializedFor='unset'; draftImage=null; draftColoringImage=null; teacherSection='lessons'; renderTeacher(); }
-function teacherTab(name){ teacherSection=name; editingLessonId=null; teacherCharactersInitializedFor='unset'; draftImage=null; draftColoringImage=null; draftDownloadFile=null; flashMessage=null; renderTeacher(); }
+function teacherTab(name){ teacherSection=name; editingChallengeId=null; challengeInitFor='unset'; editingLessonId=null; teacherCharactersInitializedFor='unset'; draftImage=null; draftColoringImage=null; draftDownloadFile=null; flashMessage=null; renderTeacher(); }
 function teacherEdit(id){ editingLessonId=id; teacherSection='editor'; teacherCharactersInitializedFor='unset';
   draftImage = id ? (lessonImage(getLesson(id))||null) : null;
   draftColoringImage = id ? ((getLesson(id)||{}).coloringImage || null) : null;
   flashMessage=null; renderTeacher(); }
-function teacherPreview(id){ teacherPreviewMode=true; if(id) currentLessonId=id; go('lesson'); }
+function teacherPreview(id){ teacherPreviewMode=true; if(id){ currentLessonId=id; archiveLessonId=id; } go('lesson'); }
 async function deleteLesson(id){
   const l=getLesson(id); if(!confirm('Delete "'+(l?l.topic:'this lesson')+'"? This cannot be undone.')) return;
   try{ await deleteDoc(doc(db,'lessons',id)); }catch(e){ alert('Could not delete online. Check the connection.'); }
@@ -1951,14 +2587,24 @@ function relativeTime(ts){
   return new Date(t).toLocaleDateString();
 }
 function lessonStatus(l){ return l.status||'Published'; }
+// Suggested date for a new lesson: one week after the latest lesson (or today if there are none).
+function nextLessonDateTs(){
+  const latest = STATE.lessons.slice().sort(lessonNewerFirst).map(l=>parseLessonDate(l.date)).find(t=>t!==null);
+  if(latest===undefined){ const n=new Date(); return new Date(n.getFullYear(),n.getMonth(),n.getDate()).getTime(); }
+  const d=new Date(latest); d.setDate(d.getDate()+7); return d.getTime();
+}
 function lessonStatusClass(s){ return s==='Draft'?'status-draft':s==='Review'?'status-review':'status-live'; }
 function teacherLessonRows(){
-  return STATE.lessons.map(l=>{
+  const cur = pickCurrentLesson();
+  const curLive = !!cur && lessonStatus(cur)==='Published';
+  return STATE.lessons.slice().sort(lessonNewerFirst).map(l=>{
     const isLive = lessonStatus(l)==='Published';
+    const isCur = curLive && cur.id===l.id;
+    const where = !isLive ? 'Hidden from children' : isCur ? '⭐ Shown on Current Theme' : '🗂️ Kept in Archives';
     return `<tr>
     <td>${lessonImage(l)?`<img src="${lessonImage(l)}" alt="" style="width:52px;height:38px;object-fit:cover;border-radius:7px">`:'<span class="muted">No image</span>'}</td>
     <td><strong>${esc(l.date||'—')}</strong></td><td>${esc(l.topic||'Untitled')}</td><td>${esc(l.story?.title||'—')}</td>
-    <td><span class="status ${lessonStatusClass(lessonStatus(l))}">${esc(lessonStatus(l))}</span></td>
+    <td><span class="status ${lessonStatusClass(lessonStatus(l))}">${esc(lessonStatus(l))}</span><div class="muted" style="font-size:11px;margin-top:4px;white-space:nowrap">${where}</div></td>
     <td><div class="toolbar" style="margin:0">
       <button class="btn secondary" onclick="teacherEdit('${l.id}')">Edit</button>
       <button class="btn secondary" onclick="teacherPreview('${l.id}')">Preview</button>
@@ -2103,6 +2749,7 @@ function teacherEditor(){
   if(teacherCharactersInitializedFor!==editingLessonId){
     teacherCharacters = (editing?.characters?.length) ? editing.characters.map(c=>({name:c.name,clue:c.clue})) : [{name:'',clue:''}];
     teacherCharactersInitializedFor = editingLessonId;
+    cwEditorInit(editing);
   }
   const status = editing ? lessonStatus(editing) : 'Draft';
   return `<div class="card">
@@ -2123,7 +2770,8 @@ function teacherEditor(){
     <div><label class="field">Maze goal name (shown in the hint)</label><input class="input" id="tfMazeGoalLabel" placeholder="the church" value="${esc(editing?.mazeGoalLabel||'')}"></div>
   </div>
   <div class="grid grid2">
-    <div><label class="field">Date</label><input class="input" id="tfDate" value="${esc(editing?.date||'')}" placeholder="Sunday, 4 October 2026"></div>
+    <div><label class="field">Lesson date</label><input class="input" id="tfDate" type="date" value="${esc(dateToInput(editing ? parseLessonDate(editing.date) : nextLessonDateTs()))}">
+      <p class="muted" style="margin:4px 0 0;font-size:12px">The published lesson with the <strong>latest date</strong> is shown on Current Theme. Earlier lessons are kept in Archives.</p></div>
     <div><label class="field">Theme</label><input class="input" id="tfTheme" value="${esc(editing?.theme||'')}"></div>
   </div>
   <label class="field">Topic</label><input class="input" id="tfTopic" value="${esc(editing?.topic||'')}">
@@ -2138,10 +2786,33 @@ function teacherEditor(){
   <label class="field">Bible story summary</label><textarea class="input" id="tfSummary" rows="4">${esc(editing?.story?.summary||'')}</textarea>
   <label class="field">What can we learn? — one point per line</label><textarea class="input" id="tfLessonPoints" rows="4">${esc((editing?.lessonPoints||[]).join('\n'))}</textarea>
   <label class="field">Confession — one statement per line</label><textarea class="input" id="tfConfession" rows="3">${esc((editing?.confession||[]).join('\n'))}</textarea>
+  <label class="field">Bible reading plan for the week — one reading per line, e.g. “Monday: Psalm 23:1-3”</label>
+  <p class="muted" style="margin:0 0 6px">Children see the box for their own age group on the Bible Reading page. Leave a box empty and they will see the lesson's main Bible reading instead.</p>
+  <div class="grid grid3">
+    <div><label class="field">🐣 Little Lambs (3–5)</label><textarea class="input" id="tfReading35" rows="6">${esc((editing?.readingPlan?.['3-5']||[]).join('\n'))}</textarea></div>
+    <div><label class="field">🐑 Explorers (6–9)</label><textarea class="input" id="tfReading69" rows="6">${esc((editing?.readingPlan?.['6-9']||[]).join('\n'))}</textarea></div>
+    <div><label class="field">🦁 Voyagers (10–12)</label><textarea class="input" id="tfReading1012" rows="6">${esc((editing?.readingPlan?.['10-12']||[]).join('\n'))}</textarea></div>
+  </div>
   <label class="field">Vocabulary for games — comma separated</label><input class="input" id="tfVocab" value="${esc((editing?.vocabulary||[]).join(', '))}">
   <label class="field">Characters for “Who am I?”</label><div id="tfCharacters"></div>
   <p id="charSummary" class="muted" style="margin:4px 0 10px"></p>
   <button type="button" class="btn secondary" onclick="addCharacterRow()">Add character</button>
+  <label class="field">🧩 Crossword puzzles (ages 6–9 and 10–12)</label>
+  <p class="muted" style="margin:0 0 6px">Type each answer and its clue — the grid is built for you. Spaces and punctuation are removed from answers (“Noah’s ark” becomes NOAHSARK). Aim for 5–10 words for Explorers and 8–14 for Voyagers. Leave a group empty to hide the crossword for that age. Little Lambs (3–5) do not get a crossword.</p>
+  <select class="input" id="tfCwEnabled" style="max-width:420px">
+    <option value="yes" ${(editing?editing.crosswordEnabled!==false:true)?'selected':''}>Yes — show it when words are added</option>
+    <option value="no" ${(editing?editing.crosswordEnabled===false:false)?'selected':''}>No — hide the Crossword this week</option>
+  </select>
+  <div class="grid">
+    ${CW_KEYS.map(([k,id,label])=>`<div class="smallcard"><h3>${label}</h3>
+      <div id="${id}"></div>
+      <div class="toolbar" style="margin:6px 0">
+        <button type="button" class="btn secondary" onclick="cwAddRow('${k}')">Add word</button>
+        <button type="button" class="btn secondary" onclick="cwFillVocab('${k}')">Add vocabulary words</button>
+        <button type="button" class="btn gold" onclick="cwPreview('${k}')">Preview grid</button>
+      </div>
+      <div id="cwprev-${k}"></div></div>`).join('')}
+  </div>
   <label class="field">Status</label><select class="input" id="tfStatus">${['Draft','Review','Published'].map(s=>`<option ${status===s?'selected':''}>${s}</option>`).join('')}</select>
   <div class="toolbar">
     <button class="btn secondary" onclick="teacherPreview('${editing?.id||''}')">Preview as a child</button>
@@ -2194,6 +2865,7 @@ async function seedStarterLessons(){
 function renderTeacher(){
   const el=document.getElementById('teacher');
   if(!teacherUnlocked) return renderTeacherGate();
+  if(teacherSection==='challengeEditor' && challengeInitFor===editingChallengeId && document.getElementById('chTitle')) return;
   if(teacherSection==='editor' && teacherCharactersInitializedFor===editingLessonId && document.getElementById('tfTopic')){
     // The editor is already open and fully built for this exact lesson.
     // Skip rebuilding it — this is what actually stops any background
@@ -2214,6 +2886,7 @@ function renderTeacher(){
     <div class="grid grid2" style="margin-top:18px">
       <div class="card action-card"><h2>📚 Lessons</h2><p>Create, edit, illustrate, publish or delete lessons.</p><button class="btn" onclick="teacherTab('lessons')">Open lessons</button></div>
       <div class="card action-card"><h2>📊 Class progress</h2><p>See engagement across every device.</p><button class="btn" onclick="teacherTab('progress')">View progress</button></div>
+      <div class="card action-card"><h2>🏁 Weekly challenge</h2><p>Build this week's Race, Emoji, Book and “Where in the Bible?” games. Scored separately.</p><button class="btn" onclick="teacherTab('challenges')">Open challenges</button></div>
       <div class="card action-card"><h2>👧 Class</h2><p>See and manage the shared list of children.</p><button class="btn secondary" onclick="teacherTab('class')">Open class</button></div>
       <div class="card action-card"><h2>👀 Child preview</h2><p>See this week as a child sees it.</p><button class="btn secondary" onclick="teacherPreview((pickCurrentLesson()||{}).id||'')">Preview this week</button></div>
     </div>${!STATE.lessons.length?`<div class="banner warn" style="margin-top:18px">No lessons yet. <button class="btn gold" style="margin-left:8px" onclick="seedStarterLessons()">Load the 4 starter lessons</button></div>`:''}`;
@@ -2226,6 +2899,8 @@ function renderTeacher(){
       </div></div>
     <div class="card"><div class="table-scroll"><table><tr><th>Picture</th><th>Date</th><th>Topic</th><th>Story</th><th>Status</th><th></th></tr>${teacherLessonRows()}</table></div></div>`;
   if(teacherSection==='editor') body=teacherEditor();
+  if(teacherSection==='challenges') body=teacherChallengeList();
+  if(teacherSection==='challengeEditor') body=teacherChallengeEditor();
   if(teacherSection==='class') body=`
     <div class="section-head"><div><h1>Children</h1><p class="muted">Shared roster — visible from every device.</p></div></div>
     <div class="card" id="classCard"><p class="muted">Loading…</p></div>`;
@@ -2242,6 +2917,7 @@ function renderTeacher(){
   el.innerHTML=`<div class="teacher-nav">
     <button class="${teacherSection==='dashboard'?'selected':''}" onclick="teacherTab('dashboard')">🏠 Dashboard</button>
     <button class="${teacherSection==='lessons'?'selected':''}" onclick="teacherTab('lessons')">📚 Lessons</button>
+    <button class="${(teacherSection==='challenges'||teacherSection==='challengeEditor')?'selected':''}" onclick="teacherTab('challenges')">🏁 Challenges</button>
     <button class="${teacherSection==='class'?'selected':''}" onclick="teacherTab('class')">👧 Class</button>
     <button class="${teacherSection==='progress'?'selected':''}" onclick="teacherTab('progress')">📊 Progress</button>
     <button class="${teacherSection==='colorings'?'selected':''}" onclick="teacherTab('colorings')">🎨 Colorings</button>
@@ -2249,13 +2925,15 @@ function renderTeacher(){
     <button class="${teacherSection==='settings'?'selected':''}" onclick="teacherTab('settings')">⚙️ Settings</button>
     <span class="spacer"></span><button onclick="lockTeacher()">🔓 Log out</button>
   </div>${body}`;
-  if(teacherSection==='editor'){ renderCharacterRows(); renderImageField(); renderColoringField(); }
+  if(teacherSection==='challengeEditor') chRenderLists();
+  if(teacherSection==='editor'){ renderCharacterRows(); renderCrosswordEditor(); renderImageField(); renderColoringField(); }
   if(teacherSection==='class') buildEngagementTable().then(html=>{ const c=document.getElementById('classCard'); if(c) c.innerHTML=html; });
   if(teacherSection==='progress') teacherReports().then(html=>{ const c=document.getElementById('reportsCard'); if(c) c.innerHTML=html; });
   if(teacherSection==='colorings') renderColoringsGallery().then(html=>{ const c=document.getElementById('coloringsCard'); if(c) c.innerHTML=html; });
   if(teacherSection==='downloads') renderDownloadsAdmin();
 }
 function val(id){ const el=document.getElementById(id); return el?el.value.trim():''; }
+function linesOf(id){ return val(id).split('\n').map(s=>s.trim()).filter(Boolean); }
 async function publishLesson(){
   const banner=document.getElementById('teacherBanner');
   const topic=val('tfTopic'), summary=val('tfSummary');
@@ -2263,12 +2941,33 @@ async function publishLesson(){
   if(!topic||!summary){ banner.style.background='#FFF3D6'; banner.textContent='Add at least the topic and the Bible story summary.'; return; }
   let quiz=[]; const quizRaw=val('tfQuiz');
   if(quizRaw){ try{ quiz=JSON.parse(quizRaw); }catch(e){ banner.style.background='#FDEBEB'; banner.textContent='The quiz JSON has a typo. Fix it, or clear the box to publish without a quiz.'; return; } }
+  const crossword = {}; let cwProblem='';
+  CW_KEYS.forEach(([k])=>{
+    const out=[], seen=new Set();
+    teacherCrossword[k].filter(e=>(e.answer||'').trim()||(e.clue||'').trim()).forEach(e=>{
+      const a=cwCleanAnswer(e.answer), clue=(e.clue||'').trim();
+      if(!a||!clue){ cwProblem='Crossword ('+k+'): every row needs both an answer and a clue — fill it in or remove the row.'; return; }
+      if(a.length<2||a.length>CW_MAX_LEN){ cwProblem='Crossword ('+k+'): “'+e.answer.trim()+'” must be between 2 and '+CW_MAX_LEN+' letters.'; return; }
+      if(seen.has(a)) return;
+      seen.add(a); out.push({answer:a, clue});
+    });
+    crossword[k]=out;
+  });
+  if(cwProblem){ banner.style.background='#FDEBEB'; banner.textContent=cwProblem; return; }
+  const dateTs = parseLessonDate(val('tfDate'));
+  if(dateTs===null){
+    banner.style.background='#FFF3D6';
+    banner.textContent='Pick the lesson date. The lesson with the latest date is the one shown on Current Theme.';
+    banner.scrollIntoView({behavior:'smooth',block:'center'}); return;
+  }
   const existing = editingLessonId ? getLesson(editingLessonId) : null;
   const lessonObj = {
-    date: val('tfDate') || 'Untitled week',
+    date: formatLessonDate(dateTs),
     image: draftImage || '',
     coloringImage: draftColoringImage || '',
     mazeEnabled: val('tfMazeEnabled') !== 'no',
+    crossword,
+    crosswordEnabled: val('tfCwEnabled') !== 'no',
     mazeStartIcon: val('tfMazeStart') || '🐑',
     mazeGoalIcon: val('tfMazeGoalIcon') || '⛪',
     mazeGoalLabel: val('tfMazeGoalLabel') || 'the church',
@@ -2282,6 +2981,7 @@ async function publishLesson(){
     memoryVerse: {text: val('tfVerseText'), reference: val('tfRef')},
     characters: teacherCharacters.map(c=>({name:(c.name||'').trim(), clue:(c.clue||'').trim()})).filter(c=>c.name),
     vocabulary: val('tfVocab').split(',').map(s=>s.trim().toUpperCase()).filter(Boolean),
+    readingPlan: {'3-5': linesOf('tfReading35'), '6-9': linesOf('tfReading69'), '10-12': linesOf('tfReading1012')},
     quiz
   };
   if(existing && existing.chooseBetter) lessonObj.chooseBetter = existing.chooseBetter;
@@ -2290,6 +2990,18 @@ async function publishLesson(){
     banner.style.background='#FDEBEB';
     banner.textContent = 'This lesson (about '+Math.round(sizeBytes/1024)+' KB) is too large to store — please use a smaller picture.';
     return;
+  }
+  // Work out where this lesson will appear, so the teacher is told plainly.
+  let placementNote = '';
+  if(lessonObj.status !== 'Published'){
+    placementNote = ' It is saved as ' + lessonObj.status + ', so children cannot see it yet.';
+  } else {
+    const rivals = STATE.lessons.filter(l=>l.id!==editingLessonId && lessonStatus(l)==='Published').sort(lessonNewerFirst);
+    const maxSeqNow = STATE.lessons.reduce((m,l)=>Math.max(m,l.seq||0),0);
+    const mine = {date:lessonObj.date, seq: existing ? (existing.seq||0) : maxSeqNow+1};
+    const top = rivals[0];
+    if(!top || lessonNewerFirst(mine, top) <= 0) placementNote = ' It is now the lesson on Current Theme.' + (top ? ' “'+top.topic+'” has moved to Archives.' : '');
+    else placementNote = ' Its date is earlier than the current lesson (“'+top.topic+'”, '+top.date+'), so it is kept in Archives. Give it the latest date to show it on Current Theme.';
   }
   banner.style.background='#FFF3D6'; banner.textContent='Publishing…';
   const publishBtn = document.getElementById('publishBtn');
@@ -2312,12 +3024,620 @@ async function publishLesson(){
     const savedBits = [];
     savedBits.push(lessonObj.quiz.length + ' quiz question' + (lessonObj.quiz.length===1?'':'s'));
     savedBits.push(lessonObj.characters.length + ' "Who am I?" character' + (lessonObj.characters.length===1?'':'s'));
-    flashMessage = 'Published "' + lessonObj.topic + '" with ' + savedBits.join(' and ') + '.';
+    const cwTotal = crossword['6-9'].length + crossword['10-12'].length;
+    if(cwTotal) savedBits.push(cwTotal + ' crossword word' + (cwTotal===1?'':'s'));
+    flashMessage = (lessonObj.status==='Published' ? 'Published' : 'Saved') + ' "' + lessonObj.topic + '" with ' + savedBits.join(' and ') + '.' + placementNote;
     renderTeacher();
   }catch(e){
     if(publishBtn) publishBtn.disabled = false;
     banner.style.background='#FDEBEB'; banner.textContent='Publishing did not go through. Check the connection and try again.';
   }
+}
+
+/* ===================== WEEKLY CHALLENGE (standalone points) ===================== */
+const BIBLE_BOOKS = ['Genesis','Exodus','Leviticus','Numbers','Deuteronomy','Joshua','Judges','Ruth','1 Samuel','2 Samuel','1 Kings','2 Kings',
+  '1 Chronicles','2 Chronicles','Ezra','Nehemiah','Esther','Job','Psalms','Proverbs','Ecclesiastes','Song of Solomon','Isaiah','Jeremiah',
+  'Lamentations','Ezekiel','Daniel','Hosea','Joel','Amos','Obadiah','Jonah','Micah','Nahum','Habakkuk','Zephaniah','Haggai','Zechariah','Malachi',
+  'Matthew','Mark','Luke','John','Acts','Romans','1 Corinthians','2 Corinthians','Galatians','Ephesians','Philippians','Colossians',
+  '1 Thessalonians','2 Thessalonians','1 Timothy','2 Timothy','Titus','Philemon','Hebrews','James','1 Peter','2 Peter','1 John','2 John','3 John','Jude','Revelation'];
+const BOOK_ALIASES = {'psalm':'Psalms','songs of solomon':'Song of Solomon','song of songs':'Song of Solomon','revelations':'Revelation'};
+function bookCanon(s){
+  const t=String(s||'').trim().toLowerCase().replace(/\s+/g,' '); if(!t) return null;
+  return BIBLE_BOOKS.find(b=>b.toLowerCase()===t) || BOOK_ALIASES[t] || null;
+}
+const BOOK_SETS = {
+  pentateuch:{label:'The Law (Genesis–Deuteronomy)', ranges:[[0,5]]},
+  history:{label:'History books (Joshua–Esther)', ranges:[[5,17]]},
+  wisdom:{label:'Poetry and wisdom (Job–Song of Solomon)', ranges:[[17,22]]},
+  major:{label:'Major prophets (Isaiah–Daniel)', ranges:[[22,27]]},
+  minor:{label:'Minor prophets (Hosea–Malachi)', ranges:[[27,39]]},
+  gospels:{label:'The Gospels (Matthew–John)', ranges:[[39,43]]},
+  gospelsActs:{label:'The Gospels and Acts', ranges:[[39,44]]},
+  paul:{label:"Paul's letters (Romans–Philemon)", ranges:[[44,57]]},
+  general:{label:'General letters and Revelation (Hebrews–Revelation)', ranges:[[57,66]]},
+  nt:{label:'The whole New Testament (27 books)', ranges:[[39,66]]},
+  ot:{label:'The whole Old Testament (39 books)', ranges:[[0,39]]}
+};
+const BOOK_AUTO = {
+  '3-5':{label:'The Gospels', ranges:[[39,43]]},
+  '6-9':{label:'The Law and the Gospels', ranges:[[0,5],[39,43]]},
+  '10-12':{label:"Paul's letters", ranges:[[44,57]]}
+};
+function bookSetFor(mode, age){
+  const s = (mode==='auto' || !BOOK_SETS[mode]) ? (BOOK_AUTO[age]||BOOK_AUTO['6-9']) : BOOK_SETS[mode];
+  return {label:s.label, books:s.ranges.flatMap(([a,b])=>BIBLE_BOOKS.slice(a,b))};
+}
+function chShuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+
+function getChallenge(id){ return STATE.challenges.find(c=>c.id===id) || null; }
+function publishedChallenges(){ return STATE.challenges.filter(c=>(c.status||'Published')==='Published'); }
+function pickCurrentChallenge(){
+  const v=publishedChallenges();
+  return v.length ? v.reduce((a,b)=>((b.seq||0)>(a.seq||0)?b:a)) : null;
+}
+// Which games a challenge actually has content for.
+function chActivities(c){
+  const out=[];
+  if(c.race && Array.isArray(c.race.questions) && c.race.questions.length>=3) out.push(['race','🏁 Adventure Race']);
+  if(Array.isArray(c.emoji) && c.emoji.length>=1) out.push(['emoji','😀 Emoji Challenge']);
+  if(c.books && c.books.mode && c.books.mode!=='off') out.push(['books','📚 Bible Book Challenge']);
+  if(Array.isArray(c.where) && c.where.length>=2) out.push(['where','🧭 Where in the Bible?']);
+  return out;
+}
+
+/* ---- Standalone challenge scoring (never touches PROGRESS.points / scores / badges) ---- */
+function recordChallengeScore(chId, type, rawScore, maxScore, countAsPlay){
+  const C = PROGRESS.challenge, key = chId+':'+type;
+  const prev = C.scores[key] || {score:0, max:maxScore};
+  const capped = Math.max(0, Math.min(maxScore, Math.max(prev.score, rawScore)));
+  C.scores[key] = {score:capped, max:maxScore};
+  if(countAsPlay) C.playCounts[key] = (C.playCounts[key]||0) + 1;
+  C.points = Object.values(C.scores).reduce((s,v)=>s+v.score,0);
+  C.lastActive = Date.now();
+  persistProgress();
+  renderPointsPill();
+  const a=document.getElementById('chPtsThis'); if(a) a.textContent = challengePointsFor(PROGRESS, currentChallengeId);
+  const b=document.getElementById('chPtsAll'); if(b) b.textContent = C.points;
+}
+function challengePointsFor(prog, chId){
+  const pre=chId+':', sc=(prog.challenge&&prog.challenge.scores)||{};
+  return Object.keys(sc).filter(k=>k.startsWith(pre)).reduce((t,k)=>t+(Number(sc[k].score)||0),0);
+}
+function chBankedLine(chId, type, max){
+  const b=((PROGRESS.challenge.scores[chId+':'+type])||{score:0}).score;
+  return `Challenge points banked: ${b} / ${max}${b>=max?' — maxed out! 🌟':''}`;
+}
+function chAgainBar(onReplay){
+  return `<div class="toolbar"><button class="btn" onclick="${onReplay}">Play again</button>
+    <button class="btn secondary" onclick="chPickAnother()">Try another challenge game</button></div>`;
+}
+
+/* ---- Weekly Challenge page ---- */
+let currentChallengeId=null, currentChallengeActivity=null, challengePreviewMode=false;
+function selectChallenge(id){ currentChallengeId=id; currentChallengeActivity=null; renderToken++; renderChallengeScreen(); }
+function setChallengeActivity(k){ currentChallengeActivity=k; renderToken++; renderChallengeScreen(); }
+function renderChallengeScreen(){ renderChallengePanel(document.getElementById('activityBox')); }
+function renderChallengePanel(el){
+  if(!el) return;
+  const pool = challengePreviewMode ? STATE.challenges : publishedChallenges();
+  if(!pool.length){ el.innerHTML=`<h2>🏁 Weekly Challenge</h2><div class="banner warn">No weekly challenge has been published yet — check back soon!</div>`; return; }
+  const c = pool.find(x=>x.id===currentChallengeId) || pickCurrentChallenge() || pool[0];
+  currentChallengeId = c.id;
+  const acts = chActivities(c);
+  const head = `<h2>🏁 Weekly Challenge ${c.weekLabel?`<span class="tag" style="vertical-align:middle">${esc(c.weekLabel)}</span>`:''}</h2>
+    <p style="font-weight:800;color:var(--purple-dark);margin:0 0 4px">${esc(c.title)}</p>${c.intro?`<p class="muted" style="font-size:14px;margin:0 0 6px">${esc(c.intro)}</p>`:''}
+    <p class="muted" style="margin:0 0 10px">Challenge points are separate from your Adventure Points. This challenge: <strong id="chPtsThis">${challengePointsFor(PROGRESS,c.id)}</strong> · All challenges: <strong id="chPtsAll">${PROGRESS.challenge.points}</strong></p>`;
+  const others = pool.filter(x=>x.id!==c.id).slice().sort((a,b)=>(b.seq||0)-(a.seq||0));
+  const archive = others.length ? `<h3 style="margin-top:20px">Earlier challenges</h3><div class="toolbar">${others.map(x=>
+    `<button class="btn secondary" onclick="selectChallenge('${x.id}')">${esc(x.weekLabel||x.title)}</button>`).join('')}</div>` : '';
+  if(!acts.length){ el.innerHTML=head+`<div class="banner warn">This challenge doesn't have any games yet.</div>`+archive; return; }
+  if(!acts.some(a=>a[0]===currentChallengeActivity)) currentChallengeActivity=acts[0][0];
+  el.innerHTML = head + `<div class="activity-nav ch-subnav">${acts.map(([k,label])=>
+      `<button class="${currentChallengeActivity===k?'active':''}" onclick="setChallengeActivity('${k}')">${label}</button>`).join('')}</div>
+    <div id="challengeBox" class="ch-inner"></div>${archive}`;
+  renderChallengeGame(c, document.getElementById('challengeBox'));
+}
+function renderChallengeGame(c, box){
+  if(!c || !box) return;
+  if(currentChallengeActivity==='race') return renderRace(c, box);
+  if(currentChallengeActivity==='emoji') return renderEmojiChallenge(c, box);
+  if(currentChallengeActivity==='books') return renderBookChallenge(c, box);
+  if(currentChallengeActivity==='where') return renderWhereChallenge(c, box);
+}
+function chPickAnother(){ const n=document.querySelector('.ch-subnav'); if(n) n.scrollIntoView({behavior:'smooth',block:'center'}); }
+function chReplay(){ renderChallengeGame(getChallenge(currentChallengeId), document.getElementById('challengeBox')); }
+
+/* ---- Shared multiple-choice runner (Emoji + Where in the Bible) ---- */
+let chMq=null;
+function chStartMCQ(c, type, title, items){
+  chMq={c, type, title, items, i:0, score:0, max:items.length*10};
+  chShowMCQ();
+}
+function chShowMCQ(){
+  const m=chMq, box=document.getElementById('challengeBox'); if(!m||!box) return;
+  if(m.i>=m.items.length){
+    recordChallengeScore(m.c.id, m.type, m.score*10, m.max, true);
+    box.innerHTML=`<h2>🎉 ${esc(m.title)} complete</h2><p>You got <strong>${m.score} / ${m.items.length}</strong> right.</p>
+      <p class="muted">${chBankedLine(m.c.id,m.type,m.max)}</p>${chAgainBar('chReplay()')}`;
+    return;
+  }
+  const it=m.items[m.i];
+  box.innerHTML=`<h2>${esc(m.title)} — ${m.i+1} of ${m.items.length}</h2>${it.html}
+    <div class="options" id="chOptions"></div><div id="chFeedback" class="feedback" role="status"></div>`;
+  const wrap=document.getElementById('chOptions');
+  it.options.forEach(o=>{ const d=document.createElement('button'); d.type='button'; d.className='option'; d.textContent=o;
+    d.onclick=()=>chAnswerMCQ(d,o); wrap.appendChild(d); });
+}
+function chAnswerMCQ(el, chosen){
+  const m=chMq, it=m.items[m.i], tok=renderToken, ok=chosen===it.answer;
+  document.querySelectorAll('#chOptions .option').forEach(o=>{
+    if(o.textContent===it.answer) o.classList.add('correct');
+    if(o===el && !ok) o.classList.add('wrong');
+    o.onclick=null;
+  });
+  const fb=document.getElementById('chFeedback');
+  if(ok){ m.score++; fb.textContent='🎉 Correct!'; fb.style.color='#1E8A4C'; recordChallengeScore(m.c.id,m.type,m.score*10,m.max,false); }
+  else { fb.textContent='Not quite — the highlighted answer is correct.'; fb.style.color='#D14343'; }
+  setTimeout(()=>{ if(tok!==renderToken) return; m.i++; chShowMCQ(); }, 1300);
+}
+
+/* ---- 😀 Emoji Challenge ---- */
+function renderEmojiChallenge(c, box){
+  const items=chShuffle((c.emoji||[]).filter(e=>e&&e.emojis&&e.answer)).map(e=>{
+    const wrongs=[...new Set((e.wrong||[]).filter(w=>w&&w!==e.answer))];
+    return {html:`<div class="ch-emoji" role="img" aria-label="Emoji clue">${esc(e.emojis)}</div><div class="question">Which Bible story is this?</div>`,
+      answer:e.answer, options:chShuffle([e.answer, ...wrongs])};
+  });
+  if(!items.length){ box.innerHTML='<p>No emoji puzzles have been added yet.</p>'; return; }
+  chStartMCQ(c,'emoji','😀 Emoji Challenge',items);
+}
+
+/* ---- 🧭 Where in the Bible? ---- */
+function renderWhereChallenge(c, box){
+  const pairs=(c.where||[]).map(w=>({item:w.item, book:bookCanon(w.book)})).filter(w=>w.item&&w.book);
+  if(pairs.length<2){ box.innerHTML='<p>This game needs at least two items.</p>'; return; }
+  const nOpt = ageKey()==='3-5' ? 3 : 4;
+  const items=chShuffle(pairs).map(w=>{
+    const others=[...new Set(pairs.map(x=>x.book).filter(b=>b!==w.book))];
+    const ot = BIBLE_BOOKS.indexOf(w.book)<39;
+    const pool=chShuffle(BIBLE_BOOKS.filter(b=>b!==w.book && !others.includes(b) && (BIBLE_BOOKS.indexOf(b)<39)===ot));
+    const wrongs=chShuffle(others).concat(pool).slice(0,nOpt-1);
+    return {html:`<div class="question">Where in the Bible do we find: <em>${esc(w.item)}</em>?</div>`,
+      answer:w.book, options:chShuffle([w.book,...wrongs])};
+  });
+  chStartMCQ(c,'where','🧭 Where in the Bible?',items);
+}
+
+/* ---- 📚 Bible Book Challenge ---- */
+let chBk=null;
+function renderBookChallenge(c, box){
+  const set=bookSetFor((c.books||{}).mode, ageKey()), books=set.books;
+  let bank=chShuffle(books);
+  for(let t=0; t<10 && books.length>1 && bank.join('|')===books.join('|'); t++) bank=chShuffle(books);
+  chBk={c, books, bank, placed:0, miss:0, pts:0, max:books.length*3, label:set.label, msg:'', done:false};
+  chDrawBooks();
+}
+function chDrawBooks(){
+  const B=chBk, box=document.getElementById('challengeBox'); if(!B||!box) return;
+  box.innerHTML=`<h2>📚 Bible Book Challenge</h2>
+    <p class="muted">Put these ${B.books.length} books in the order they appear in your Bible — <strong>${esc(B.label)}</strong>. Tap the book that comes next.</p>
+    <div class="ch-order">${B.books.map((b,i)=>`<span class="ch-slot ${i<B.placed?'filled':''}"><b>${i+1}</b> ${i<B.placed?esc(b):'…'}</span>`).join('')}</div>
+    <div class="ch-bank" id="chBank"></div>
+    <div id="chFeedback" class="feedback" role="status">${esc(B.msg)}</div><div id="chBookDone"></div>`;
+  const bank=document.getElementById('chBank');
+  B.bank.forEach(name=>{ const d=document.createElement('button'); d.type='button'; d.className='ch-chip'; d.textContent=name;
+    d.onclick=()=>chPickBook(name,d); bank.appendChild(d); });
+  if(B.done){
+    document.getElementById('chBookDone').innerHTML=`<p class="muted">${chBankedLine(B.c.id,'books',B.max)}</p>${chAgainBar('chReplay()')}`;
+    document.getElementById('chFeedback').style.color='#1E8A4C';
+  }
+}
+function chPickBook(name, chip){
+  const B=chBk; if(!B||B.done) return;
+  if(name===B.books[B.placed]){
+    B.pts += B.miss===0 ? 3 : 1;
+    B.placed++; B.miss=0; B.bank=B.bank.filter(b=>b!==name);
+    if(B.placed===B.books.length){ B.done=true; B.msg='🎉 Perfect order — you know your Bible books!'; recordChallengeScore(B.c.id,'books',B.pts,B.max,true); }
+    else { B.msg='✅ Yes! Which book comes next?'; recordChallengeScore(B.c.id,'books',B.pts,B.max,false); }
+    chDrawBooks();
+  } else {
+    B.miss++;
+    const fb=document.getElementById('chFeedback');
+    const hint = B.miss>=2 ? ` Hint: the next book starts with “${B.books[B.placed].replace(/^\d\s/,'')[0]}”.` : '';
+    B.msg='Not that one — try another book.'+hint;
+    fb.textContent=B.msg; fb.style.color='#D14343';
+    chip.classList.remove('shake'); void chip.offsetWidth; chip.classList.add('shake');
+  }
+}
+
+/* ---- 🏁 Adventure Race ---- */
+let chRace=null;
+function raceCfg(c){
+  const r=c.race||{}, L=Math.max(8,Math.min(30,parseInt(r.length)||20));
+  const nums=a=>[...new Set((Array.isArray(a)?a:[]).map(n=>parseInt(n)).filter(n=>n>=2&&n<=L-1))];
+  const bonus=nums(r.bonusSquares), dbl=nums(r.doubleSquares).filter(n=>!bonus.includes(n));
+  const lm=(Array.isArray(r.landmarks)&&r.landmarks.length)?r.landmarks:['🌴','⛰️','🌊','🏜️','🌳'];
+  return {L, N:L-1, bonus, dbl, lm, token:r.tokenIcon||'🐑', start:r.startIcon||'🏠', goal:r.goalIcon||'⛪'};
+}
+// Best possible run: N right answers (5 each) + 5 per double square + 10 per bonus square + 20 for finishing.
+function raceMax(cfg){ return cfg.N*5 + cfg.dbl.length*5 + cfg.bonus.length*10 + 20; }
+function raceDraw(deckName, src){
+  const R=chRace; if(!R[deckName].length) R[deckName]=chShuffle(src);
+  const q=R[deckName].pop();
+  return {q:q.q, options:chShuffle(q.options), answer:q.options[q.correct]};
+}
+function renderRace(c, box){
+  const cfg=raceCfg(c), qs=c.race.questions, bq=(c.race.bonusQuestions&&c.race.bonusQuestions.length)?c.race.bonusQuestions:qs;
+  chRace={c, cfg, qs, bq, pos:0, pts:0, dbl:false, isBonus:false, note:'', deck:[], bdeck:[], q:null, max:raceMax(cfg), done:false};
+  raceNext();
+}
+function raceCells(){
+  const R=chRace, {L,N,bonus,dbl,lm,token,start,goal}=R.cfg, cols=5, rows=Math.ceil(L/cols); let out='';
+  for(let r=0;r<rows;r++) for(let k=0;k<cols;k++){
+    const i=r*cols+(r%2===0?k:cols-1-k);
+    if(i>=L){ out+='<div class="ch-sq blank"></div>'; continue; }
+    const num=i+1; let cls='', icon;
+    if(i===0) icon=start; else if(i===N) icon=goal;
+    else if(bonus.includes(num)){ cls='bonus'; icon='⭐'; }
+    else if(dbl.includes(num)){ cls='dbl'; icon='✖2'; }
+    else icon=lm[(i-1)%lm.length];
+    if(i<R.pos) cls+=' passed';
+    if(i===R.pos) cls+=' cur';
+    out+=`<div class="ch-sq ${cls}" title="Square ${num}"><span class="ch-n">${num}</span><span class="ch-ic">${esc(icon)}</span>${i===R.pos?`<span class="ch-token">${esc(token)}</span>`:''}</div>`;
+  }
+  return out;
+}
+function raceStatus(){
+  const R=chRace; return `Square ${R.pos+1} of ${R.cfg.L} · ⭐ ${R.pts} points${R.dbl?' · ✖2 on your next answer!':''}`;
+}
+function raceNext(){
+  const R=chRace, box=document.getElementById('challengeBox'); if(!R||!box) return;
+  R.q = R.isBonus ? raceDraw('bdeck',R.bq) : raceDraw('deck',R.qs);
+  box.innerHTML=`<h2>🏁 Adventure Race</h2>
+    <p class="muted">Answer correctly to move forward. ⭐ squares have a bonus question, ✖2 squares double your next answer. Reach ${esc(R.cfg.goal)} to finish!</p>
+    <div class="ch-board">${raceCells()}</div>
+    <div class="ch-status" id="chStatus">${esc(raceStatus())}</div>
+    ${R.note?`<div class="banner ok">${esc(R.note)}</div>`:''}
+    <div class="question">${R.isBonus?'⭐ Bonus challenge (+10): ':''}${esc(R.q.q)}</div>
+    <div class="options" id="chOptions"></div><div id="chFeedback" class="feedback" role="status"></div>`;
+  const wrap=document.getElementById('chOptions');
+  R.q.options.forEach(o=>{ const d=document.createElement('button'); d.type='button'; d.className='option'; d.textContent=o;
+    d.onclick=()=>raceAnswer(d,o); wrap.appendChild(d); });
+}
+function raceAnswer(btn, chosen){
+  const R=chRace, q=R.q, tok=renderToken, ok=chosen===q.answer, wasBonus=R.isBonus;
+  document.querySelectorAll('#chOptions .option').forEach(o=>{
+    if(o.textContent===q.answer) o.classList.add('correct');
+    if(o===btn && !ok) o.classList.add('wrong');
+    o.onclick=null;
+  });
+  let msg;
+  if(wasBonus){ if(ok){ R.pts+=10; msg='⭐ Bonus! +10 points'; } else msg='No bonus this time — the highlighted answer was right.'; }
+  else if(ok){ const g=R.dbl?10:5; R.pts+=g; R.dbl=false; R.pos++; msg=`🎉 Correct! +${g} points — move forward!`; }
+  else msg='Not quite — the highlighted answer is correct. Here comes a new question!';
+  const fb=document.getElementById('chFeedback'); fb.textContent=msg; fb.style.color=ok?'#1E8A4C':'#D14343';
+  recordChallengeScore(R.c.id,'race',R.pts,R.max,false);
+  setTimeout(()=>{
+    if(tok!==renderToken) return;
+    if(wasBonus){ R.isBonus=false; R.note=''; }
+    else if(ok){
+      if(R.pos>=R.cfg.N){ raceFinish(); return; }
+      const num=R.pos+1; R.note='';
+      if(R.cfg.bonus.includes(num)){ R.isBonus=true; R.note='⭐ Bonus square! Answer this one for extra points.'; }
+      else if(R.cfg.dbl.includes(num)){ R.dbl=true; R.note='✖2 square! Your next correct answer is worth double.'; }
+    }
+    raceNext();
+  }, 1300);
+}
+function raceFinish(){
+  const R=chRace, box=document.getElementById('challengeBox'); R.done=true; R.pts+=20;
+  recordChallengeScore(R.c.id,'race',R.pts,R.max,true);
+  box.innerHTML=`<h2>🏆 You reached ${esc(R.cfg.goal)}!</h2><div class="ch-board">${raceCells()}</div>
+    <p>You finished the race with <strong>${R.pts}</strong> points (including a 20-point finish bonus).</p>
+    <p class="muted">${chBankedLine(R.c.id,'race',R.max)}</p>${chAgainBar('chReplay()')}`;
+}
+
+/* ---- Leaderboard page: Weekly / Overall / Challenge windows ---- */
+function setLeaderboardTab(t){ leaderboardTab=t; renderToken++; renderLeaderboardPage(); }
+function renderLeaderboardPage(){
+  const tabs=[['week','📅 Weekly'],['all','📊 Overall'],['challenge','🏅 Challenge']];
+  if(!tabs.some(t=>t[0]===leaderboardTab)) leaderboardTab='week';
+  document.getElementById('lbTabs').innerHTML=tabs.map(([k,label])=>
+    `<button role="tab" aria-selected="${leaderboardTab===k}" class="${leaderboardTab===k?'active':''}" onclick="setLeaderboardTab('${k}')">${label}</button>`).join('');
+  const panes={week:'leaderboardWeek', all:'leaderboardAll', challenge:'leaderboardChallenge'};
+  Object.entries(panes).forEach(([k,id])=>{ document.getElementById(id).style.display = k===leaderboardTab?'block':'none'; });
+  if(leaderboardTab==='week') renderWeeklyLeaderboard();
+  else if(leaderboardTab==='all') renderOverallLeaderboard();
+  else renderChallengeLeaderboard();
+}
+
+/* ---- Challenge Leaderboard (its own tab, its own points) ---- */
+let chBoardId=null;
+function selectChallengeBoard(id){ chBoardId=id; renderChallengeLeaderboard(); }
+async function renderChallengeLeaderboard(){
+  const el=document.getElementById('leaderboardChallenge'), token=renderToken, pool=publishedChallenges();
+  const title='<h1>🏅 Challenge Leaderboard</h1>';
+  if(!pool.length){ el.innerHTML=title+`<div class="banner warn">No weekly challenge has been published yet.</div>`; return; }
+  const cur=pickCurrentChallenge(), sel=pool.find(x=>x.id===chBoardId)||cur;
+  const weeks=pool.slice().sort((a,b)=>(b.seq||0)-(a.seq||0));
+  const header=title+`<div class="toolbar">${weeks.map(x=>`<button class="btn ${x.id===sel.id?'':'secondary'}" onclick="selectChallengeBoard('${x.id}')">${esc(x.weekLabel||x.title)}${x.id===cur.id?' · this week':''}</button>`).join('')}</div>
+    <p class="muted">Challenge points are separate from lesson points — they never count towards Adventure Points, badges or the other leaderboards.</p>`;
+  el.innerHTML=header+`<div class="card"><p class="muted">Loading the top challengers…</p></div>`;
+  let all={}; try{ all=await fetchAllProgress(); }catch(e){}
+  if(token!==renderToken) return;
+  const rows=PROFILES.map(p=>{ const prog=normalizeProgress(all[p.id]||{}); return {p, week:challengePointsFor(prog,sel.id), total:prog.challenge.points}; });
+  const byWeek=rows.filter(r=>r.week>0).sort((a,b)=>b.week-a.week||byNameTiebreak(a,b)).slice(0,30);
+  const byAll=rows.filter(r=>r.total>0).sort((a,b)=>b.total-a.total||byNameTiebreak(a,b)).slice(0,30);
+  el.innerHTML=header+`<div class="grid grid2">
+    <div class="card"><h2>🏁 Top 30 — ${esc(sel.title)}</h2><p class="muted">Challenge points from the week shown above.</p>
+      ${byWeek.length?leaderboardRows(byWeek,r=>`🏁 ${r.week}`):`<p class="muted">No one has scored on this challenge yet — be the first!</p>`}</div>
+    <div class="card"><h2>🏅 Top 30 — all challenges</h2><p class="muted">Every weekly challenge added together.</p>
+      ${byAll.length?leaderboardRows(byAll,r=>`🏅 ${r.total}`):`<p class="muted">No challenge points yet.</p>`}</div>
+  </div>`;
+}
+
+/* ---- Teacher: weekly challenge editor ---- */
+let editingChallengeId=null, challengeInitFor='unset', teacherChallenge=null;
+const CH_MCQ_LISTS=['raceQ','raceBQ'];
+function chBlankMcq(){ return {q:'',o:['','','',''],correct:0}; }
+function chCloneMcq(q){ const o=(q.options||[]).slice(0,4); while(o.length<4) o.push(''); return {q:q.q||'',o,correct:Number(q.correct)||0}; }
+function chInitEditor(editing){
+  const r=(editing&&editing.race)||{};
+  const T={
+    race:{questions:(r.questions||[]).map(chCloneMcq), bonusQuestions:(r.bonusQuestions||[]).map(chCloneMcq)},
+    emoji:((editing&&editing.emoji)||[]).map(e=>({emojis:e.emojis||'',answer:e.answer||'',wrong:(e.wrong||[]).join(', ')})),
+    where:((editing&&editing.where)||[]).map(w=>({item:w.item||'',book:w.book||''}))
+  };
+  if(!T.race.questions.length) T.race.questions.push(chBlankMcq());
+  if(!T.race.bonusQuestions.length) T.race.bonusQuestions.push(chBlankMcq());
+  if(!T.emoji.length) T.emoji.push({emojis:'',answer:'',wrong:''});
+  if(!T.where.length) T.where.push({item:'',book:''});
+  teacherChallenge=T;
+}
+function chList(l){ const T=teacherChallenge; return {raceQ:T.race.questions, raceBQ:T.race.bonusQuestions, emoji:T.emoji, where:T.where}[l]; }
+function chBlankRow(l){ return CH_MCQ_LISTS.includes(l)?chBlankMcq(): l==='emoji'?{emojis:'',answer:'',wrong:''}:{item:'',book:''}; }
+function chAddRow(l){ chList(l).push(chBlankRow(l)); chRenderLists(); }
+function chRemoveRow(l,i){
+  const arr=chList(l); arr.splice(i,1); if(!arr.length) arr.push(chBlankRow(l));
+  chRenderLists();
+}
+function chOnInput(e){
+  const t=e.target; if(!t.dataset||!t.dataset.l) return;
+  const row=chList(t.dataset.l)[+t.dataset.i]; if(!row) return;
+  const f=t.dataset.f;
+  if(f==='q') row.q=t.value; else if(/^o\d$/.test(f)) row.o[+f[1]]=t.value;
+  else if(f==='correct') row.correct=+t.value; else row[f]=t.value;
+  chUpdateLive();
+}
+function chRenderLists(){
+  const T=teacherChallenge; if(!T) return;
+  const mcq=(l,arr)=>arr.map((q,i)=>`<div class="ch-erow">
+    <input class="input" data-l="${l}" data-i="${i}" data-f="q" placeholder="Question" value="${esc(q.q)}">
+    <div class="ch-opts">${[0,1,2,3].map(k=>`<input class="input" data-l="${l}" data-i="${i}" data-f="o${k}" placeholder="Answer ${'ABCD'[k]}${k<2?'':' (optional)'}" value="${esc(q.o[k])}">`).join('')}</div>
+    <div class="ch-rowfoot"><label class="muted">Correct answer:
+      <select class="input" style="width:auto;display:inline-block" data-l="${l}" data-i="${i}" data-f="correct">${[0,1,2,3].map(k=>`<option value="${k}" ${q.correct===k?'selected':''}>${'ABCD'[k]}</option>`).join('')}</select></label>
+      <button type="button" class="btn secondary" style="padding:6px 12px" onclick="chRemoveRow('${l}',${i})">Remove</button></div></div>`).join('');
+  const html={
+    chRaceQ: mcq('raceQ',T.race.questions),
+    chRaceBQ: mcq('raceBQ',T.race.bonusQuestions),
+    chEmoji: T.emoji.map((e,i)=>`<div class="ch-erow"><div class="ch-grid3">
+      <input class="input" data-l="emoji" data-i="${i}" data-f="emojis" placeholder="Emojis, e.g. 🚢🌧️🕊️" value="${esc(e.emojis)}">
+      <input class="input" data-l="emoji" data-i="${i}" data-f="answer" placeholder="Right answer, e.g. Noah's Ark" value="${esc(e.answer)}">
+      <button type="button" class="btn secondary" style="padding:6px 12px" onclick="chRemoveRow('emoji',${i})">Remove</button></div>
+      <input class="input" style="margin-top:6px" data-l="emoji" data-i="${i}" data-f="wrong" placeholder="Wrong options, separated by commas (at least 1, up to 3)" value="${esc(e.wrong)}"></div>`).join(''),
+    chWhere: T.where.map((w,i)=>`<div class="ch-erow"><div class="ch-grid3">
+      <input class="input" data-l="where" data-i="${i}" data-f="item" placeholder="Event or character, e.g. David and Goliath" value="${esc(w.item)}">
+      <input class="input" list="chBookList" data-l="where" data-i="${i}" data-f="book" placeholder="Book, e.g. 1 Samuel" value="${esc(w.book)}">
+      <button type="button" class="btn secondary" style="padding:6px 12px" onclick="chRemoveRow('where',${i})">Remove</button></div></div>`).join('')
+  };
+  Object.keys(html).forEach(id=>{ const el=document.getElementById(id); if(el){ el.innerHTML=html[id]; el.oninput=chOnInput; el.onchange=chOnInput; } });
+  chUpdateLive();
+}
+function chCollect(){
+  const T=teacherChallenge, inc={race:0,bonus:0,emoji:0,where:0};
+  const mcqOut=(arr,key)=>{
+    const out=[];
+    arr.forEach(q=>{
+      if(!((q.q||'').trim()||q.o.some(x=>(x||'').trim()))) return;
+      const opts=[]; let ci=-1;
+      q.o.forEach((x,k)=>{ const t=(x||'').trim(); if(t){ if(k===q.correct) ci=opts.length; opts.push(t); } });
+      if(!(q.q||'').trim()||opts.length<2||ci<0||new Set(opts.map(o=>o.toLowerCase())).size!==opts.length){ inc[key]++; return; }
+      out.push({q:q.q.trim(), options:opts, correct:ci});
+    });
+    return out;
+  };
+  const questions=mcqOut(T.race.questions,'race'), bonusQuestions=mcqOut(T.race.bonusQuestions,'bonus');
+  const emoji=[];
+  T.emoji.forEach(e=>{
+    if(!((e.emojis||'').trim()||(e.answer||'').trim()||(e.wrong||'').trim())) return;
+    const answer=(e.answer||'').trim(), emojis=(e.emojis||'').trim();
+    const wrong=[...new Set((e.wrong||'').split(',').map(x=>x.trim()).filter(x=>x&&x.toLowerCase()!==answer.toLowerCase()))].slice(0,3);
+    if(!emojis||!answer||!wrong.length){ inc.emoji++; return; }
+    emoji.push({emojis, answer, wrong});
+  });
+  const where=[];
+  T.where.forEach(w=>{
+    if(!((w.item||'').trim()||(w.book||'').trim())) return;
+    const book=bookCanon(w.book), item=(w.item||'').trim();
+    if(!item||!book){ inc.where++; return; }
+    where.push({item, book});
+  });
+  const nums=id=>[...new Set(val(id).split(/[^0-9]+/).filter(Boolean).map(Number))];
+  const length=Math.max(8,Math.min(30,parseInt(val('chLen'))||20));
+  const rawBonus=nums('chBonusSq'), rawDbl=nums('chDblSq');
+  const bonusSquares=rawBonus.filter(n=>n>=2&&n<=length-1);
+  const doubleSquares=rawDbl.filter(n=>n>=2&&n<=length-1&&!bonusSquares.includes(n));
+  const squaresAdjusted=bonusSquares.length!==rawBonus.length||doubleSquares.length!==rawDbl.length;
+  const data={
+    kind:'challenge', title:val('chTitle'), weekLabel:val('chWeek'), intro:val('chIntro'), status:val('chStatus')||'Draft',
+    race:{length, tokenIcon:val('chToken')||'🐑', startIcon:val('chStart')||'🏠', goalIcon:val('chGoal')||'⛪',
+      landmarks:val('chLandmarks').split(/\s+/).filter(Boolean), bonusSquares, doubleSquares,
+      questions, bonusQuestions},
+    emoji, books:{mode:val('chBooks')||'auto'}, where
+  };
+  return {data, inc, squaresAdjusted};
+}
+function chUpdateLive(){
+  const el=document.getElementById('chLive'); if(!el||!teacherChallenge) return;
+  const {data,inc}=chCollect();
+  const line=(ok,label,detail,bad)=>`${ok?'✅':'⬜'} <b>${label}</b> — ${detail}${bad?` <span style="color:#D14343">(${bad} incomplete row${bad===1?'':'s'} — finish or remove)</span>`:''}`;
+  const rq=data.race.questions.length;
+  el.innerHTML=[
+    line(rq>=3,'Adventure Race',rq>=3?`${rq} questions, ${data.race.bonusQuestions.length} bonus`:`${rq} question${rq===1?'':'s'} so far — needs at least 3 to appear`,inc.race+inc.bonus),
+    line(data.emoji.length>=1,'Emoji Challenge',`${data.emoji.length} puzzle${data.emoji.length===1?'':'s'}`,inc.emoji),
+    line(data.books.mode!=='off','Bible Book Challenge',data.books.mode==='off'?'hidden this week':'ready (no content needed)',0),
+    line(data.where.length>=2,'Where in the Bible?',data.where.length>=2?`${data.where.length} items`:`${data.where.length} item${data.where.length===1?'':'s'} so far — needs at least 2 to appear`,inc.where)
+  ].join('<br>');
+}
+function teacherChallengeEditor(){
+  const editing=editingChallengeId?getChallenge(editingChallengeId):null;
+  if(challengeInitFor!==editingChallengeId){ chInitEditor(editing); challengeInitFor=editingChallengeId; }
+  const r=(editing&&editing.race)||{};
+  const status=editing?(editing.status||'Published'):'Draft';
+  const bookOpts=[['auto','Automatic by age — Little Lambs: Gospels · Explorers: Law + Gospels · Voyagers: Paul’s letters'],
+    ...Object.entries(BOOK_SETS).map(([k,v])=>[k,v.label]), ['off','Hide the Bible Book Challenge this week']];
+  const curMode=(editing&&editing.books&&editing.books.mode)||'auto';
+  return `<div class="card">
+  <div class="section-head"><div><h2>${editing?'Edit weekly challenge':'Create this week’s challenge'}</h2>
+    <p class="muted">Challenge points are standalone — they never touch Adventure Points, badges or the lesson leaderboards.</p></div>
+    <span class="status ${lessonStatusClass(status)}">${esc(status)}</span></div>
+  <div class="banner warn" id="chBanner" style="display:none"></div>
+  <div class="grid grid2">
+    <div><label class="field">Challenge title</label><input class="input" id="chTitle" placeholder="e.g. Heroes of Faith" value="${esc(editing?.title||'')}"></div>
+    <div><label class="field">Week / date</label><input class="input" id="chWeek" placeholder="Week of 1 November 2026" value="${esc(editing?.weekLabel||'')}"></div>
+  </div>
+  <label class="field">Short introduction (optional)</label><textarea class="input" id="chIntro" rows="2">${esc(editing?.intro||'')}</textarea>
+
+  <div class="smallcard" style="margin-top:14px"><h3>🏁 Adventure Race</h3>
+    <p class="muted" style="margin:0 0 6px">Children answer questions to move along the path. Square 1 is the start and the last square is the finish. Bonus squares (⭐) ask an extra question worth 10 points; double squares (✖2) double the next correct answer.</p>
+    <div class="grid grid3">
+      <div><label class="field">Path length (8–30 squares)</label><input class="input" id="chLen" type="number" min="8" max="30" value="${esc(r.length||20)}"></div>
+      <div><label class="field">Bonus squares (⭐)</label><input class="input" id="chBonusSq" value="${esc(editing?(r.bonusSquares||[]).join(', '):'5, 10, 15')}"></div>
+      <div><label class="field">Double squares (✖2)</label><input class="input" id="chDblSq" value="${esc(editing?(r.doubleSquares||[]).join(', '):'8, 13, 18')}"></div>
+    </div>
+    <div class="grid grid3">
+      <div><label class="field">Runner icon</label><input class="input" id="chToken" maxlength="4" value="${esc(r.tokenIcon||'🐑')}"></div>
+      <div><label class="field">Start icon</label><input class="input" id="chStart" maxlength="4" value="${esc(r.startIcon||'🏠')}"></div>
+      <div><label class="field">Finish icon</label><input class="input" id="chGoal" maxlength="4" value="${esc(r.goalIcon||'⛪')}"></div>
+    </div>
+    <label class="field">Landmark emojis along the path — separated by spaces, they repeat in order</label>
+    <input class="input" id="chLandmarks" value="${esc(editing?(r.landmarks||[]).join(' '):'🌴 ⛰️ 🌊 🏜️ 🌳')}">
+    <label class="field">Race questions (at least 3)</label><div id="chRaceQ"></div>
+    <button type="button" class="btn secondary" onclick="chAddRow('raceQ')">Add question</button>
+    <label class="field">Bonus-square questions (optional — the race questions are reused if empty)</label><div id="chRaceBQ"></div>
+    <button type="button" class="btn secondary" onclick="chAddRow('raceBQ')">Add bonus question</button>
+  </div>
+
+  <div class="smallcard" style="margin-top:14px"><h3>😀 Emoji Challenge</h3>
+    <p class="muted" style="margin:0 0 6px">Children guess the Bible story from the emojis. Give the right answer and 1–3 wrong options.</p>
+    <div id="chEmoji"></div><button type="button" class="btn secondary" onclick="chAddRow('emoji')">Add emoji puzzle</button></div>
+
+  <div class="smallcard" style="margin-top:14px"><h3>📚 Bible Book Challenge</h3>
+    <p class="muted" style="margin:0 0 6px">No content to enter — the app already knows the 66 books. Choose which set of books to use this week.</p>
+    <select class="input" id="chBooks">${bookOpts.map(([k,lab])=>`<option value="${k}" ${curMode===k?'selected':''}>${esc(lab)}</option>`).join('')}</select></div>
+
+  <div class="smallcard" style="margin-top:14px"><h3>🧭 Where in the Bible?</h3>
+    <p class="muted" style="margin:0 0 6px">Children match each event or character to its book. Pick the book from the suggestions so spelling is exact.</p>
+    <div id="chWhere"></div><button type="button" class="btn secondary" onclick="chAddRow('where')">Add item</button>
+    <datalist id="chBookList">${BIBLE_BOOKS.map(b=>`<option value="${esc(b)}"></option>`).join('')}</datalist></div>
+
+  <label class="field">What will children see?</label><div class="ch-live" id="chLive"></div>
+  <label class="field">Status</label><select class="input" id="chStatus">${['Draft','Published'].map(x=>`<option ${status===x?'selected':''}>${x}</option>`).join('')}</select>
+  <div class="toolbar">
+    ${editing?`<button class="btn secondary" onclick="teacherPreviewChallenge('${editing.id}')">Preview as a child</button>`:''}
+    <button class="btn green" id="chPublishBtn" onclick="publishChallenge()">${editing?'Save challenge':'Save new challenge'}</button>
+    <button class="btn secondary" onclick="chCancel()">Cancel</button>
+  </div>
+  <p class="muted">Set the status to <b>Published</b> when it is ready — the newest published challenge is the one shown on the Weekly Challenge page. “Preview as a child” shows the last <i>saved</i> version.</p></div>`;
+}
+function chSummaryIcons(c){ return chActivities(c).map(a=>a[1].split(' ')[0]).join(' ')||'—'; }
+function teacherChallengeList(){
+  const rows=STATE.challenges.slice().sort((a,b)=>(b.seq||0)-(a.seq||0)).map(c=>{
+    const live=(c.status||'Published')==='Published';
+    return `<tr><td><strong>${esc(c.weekLabel||'—')}</strong></td><td>${esc(c.title||'Untitled')}</td><td style="font-size:18px">${chSummaryIcons(c)}</td>
+      <td><span class="status ${lessonStatusClass(c.status||'Published')}">${esc(c.status||'Published')}</span></td>
+      <td><div class="toolbar" style="margin:0">
+        <button class="btn secondary" onclick="teacherEditChallenge('${c.id}')">Edit</button>
+        <button class="btn secondary" onclick="teacherPreviewChallenge('${c.id}')">Preview</button>
+        <button class="btn ${live?'secondary':''}" onclick="toggleChallengeStatus('${c.id}')">${live?'⏸️ Deactivate':'▶️ Activate'}</button>
+        <button class="btn danger" onclick="deleteChallenge('${c.id}')">Delete</button></div></td></tr>`;
+  }).join('');
+  return `${flashMessage?`<div class="banner ok">${esc(flashMessage)}</div>`:''}
+    <div class="section-head"><div><h1>Weekly challenges</h1><p class="muted">A different challenge each week, scored separately from lessons.</p></div>
+      <div class="toolbar" style="margin:0"><button class="btn secondary" onclick="seedSampleChallenge()">Load a sample challenge</button>
+        <button class="btn" onclick="teacherEditChallenge(null)">New challenge</button></div></div>
+    <div class="card">${STATE.challenges.length?`<div class="table-scroll"><table><tr><th>Week</th><th>Title</th><th>Games</th><th>Status</th><th></th></tr>${rows}</table></div>`
+      :`<p class="muted">No challenges yet. Press “New challenge”, or “Load a sample challenge” to see how one is filled in.</p>`}</div>`;
+}
+function teacherEditChallenge(id){ editingChallengeId=id; challengeInitFor='unset'; teacherSection='challengeEditor'; flashMessage=null; renderTeacher(); }
+function teacherPreviewChallenge(id){
+  challengePreviewMode=true; currentChallengeId=id; currentChallengeActivity=null; currentActivity='challenge';
+  // The Activities page needs a lesson behind it; if none is published yet, borrow the first so the preview still opens.
+  if(!publishedLessons().length && STATE.lessons.length){ teacherPreviewMode=true; currentLessonId=STATE.lessons[0].id; }
+  go('activity');
+}
+function chCancel(){ editingChallengeId=null; challengeInitFor='unset'; teacherSection='challenges'; renderTeacher(); }
+async function toggleChallengeStatus(id){
+  const c=getChallenge(id); if(!c||!dbReady) return;
+  try{ await updateDoc(doc(db,'lessons',id),{status:(c.status||'Published')==='Published'?'Draft':'Published'}); }
+  catch(e){ alert('Could not update online. Check the connection.'); }
+}
+async function deleteChallenge(id){
+  const c=getChallenge(id); if(!confirm('Delete "'+(c?c.title:'this challenge')+'"? This cannot be undone.')) return;
+  try{ await deleteDoc(doc(db,'lessons',id)); }catch(e){ alert('Could not delete online. Check the connection.'); }
+}
+async function publishChallenge(){
+  const banner=document.getElementById('chBanner'); banner.style.display='block';
+  const {data,inc,squaresAdjusted}=chCollect();
+  const bad=(c,t)=>{ banner.style.background='#FDEBEB'; banner.textContent=t; banner.scrollIntoView({behavior:'smooth',block:'center'}); };
+  if(!data.title){ banner.style.background='#FFF3D6'; banner.textContent='Give the challenge a title.'; banner.scrollIntoView({behavior:'smooth',block:'center'}); return; }
+  const parts=[]; if(inc.race) parts.push('Adventure Race questions ('+inc.race+')'); if(inc.bonus) parts.push('bonus questions ('+inc.bonus+')');
+  if(inc.emoji) parts.push('Emoji puzzles ('+inc.emoji+')'); if(inc.where) parts.push('Where in the Bible? items ('+inc.where+')');
+  if(parts.length){ bad(0,'Some rows are incomplete or invalid: '+parts.join(', ')+'. Every question needs text, at least two different answers and a correct answer that is filled in; emoji puzzles need emojis, an answer and a wrong option; Where in the Bible? needs an item and a real Bible book. Finish or remove those rows.'); return; }
+  if(data.status==='Published' && !chActivities(data).length){ bad(0,'Add at least one complete game before publishing (or save it as a Draft).'); return; }
+  const size=new Blob([JSON.stringify(data)]).size;
+  if(size>MAX_LESSON_DOC_BYTES){ bad(0,'This challenge is too large to store ('+Math.round(size/1024)+' KB).'); return; }
+  banner.style.background='#FFF3D6'; banner.textContent='Saving…';
+  const btn=document.getElementById('chPublishBtn'); if(btn) btn.disabled=true;
+  try{
+    if(editingChallengeId){ await updateDoc(doc(db,'lessons',editingChallengeId), data); }
+    else {
+      const maxSeq=[...STATE.lessons,...STATE.challenges].reduce((m,x)=>Math.max(m,x.seq||0),0);
+      await addDoc(collection(db,'lessons'), {...data, seq:maxSeq+1, createdAt:serverTimestamp()});
+    }
+    teacherSection='challenges'; editingChallengeId=null; challengeInitFor='unset';
+    flashMessage='Saved "'+data.title+'" ('+chActivities(data).length+' game'+(chActivities(data).length===1?'':'s')+' ready, status: '+data.status+').'+(squaresAdjusted?' Some bonus/double square numbers were outside 2 to '+(data.race.length-1)+' or used twice, so they were ignored.':'');
+    renderTeacher();
+  }catch(e){
+    if(btn) btn.disabled=false;
+    banner.style.background='#FDEBEB'; banner.textContent='Saving did not go through. Check the connection and try again.';
+    banner.scrollIntoView({behavior:'smooth',block:'center'});
+  }
+}
+function sampleChallenge(){
+  const mc=(q,options,correct)=>({q,options,correct});
+  return {kind:'challenge', title:'Heroes of Faith (sample)', weekLabel:'Sample week', status:'Draft',
+    intro:'Race along the path, crack the emoji clues, put the Bible books in order and find where each story lives!',
+    race:{length:20, tokenIcon:'🐑', startIcon:'🏠', goalIcon:'⛪', landmarks:['🌴','⛰️','🌊','🏜️','🌳'], bonusSquares:[5,10,15], doubleSquares:[8,13,18],
+      questions:[mc('Who built the ark?',['Noah','Moses','Abraham','David'],0), mc('Who was swallowed by a big fish?',['Peter','Jonah','Daniel','Paul'],1),
+        mc('How many disciples did Jesus choose?',['7','10','12','20'],2), mc('Who defeated Goliath?',['Samson','Saul','David','Joshua'],2),
+        mc('Which sea did Moses part?',['Dead Sea','Red Sea','Sea of Galilee','Black Sea'],1), mc('Where was Jesus born?',['Nazareth','Jerusalem','Bethlehem','Jericho'],2)],
+      bonusQuestions:[mc('What is the first book of the Bible?',['Genesis','Exodus','Matthew','Psalms'],0), mc('Who was thrown into the lions’ den?',['Daniel','Elijah','Jonah','Samuel'],0)]},
+    emoji:[{emojis:'🚢🌧️🐘🕊️🌈', answer:'Noah’s Ark', wrong:['Jonah and the Big Fish','The Tower of Babel','Moses and the Red Sea']},
+      {emojis:'🐋🧔🌊', answer:'Jonah and the Big Fish', wrong:['Noah’s Ark','David and Goliath','Daniel in the Lions’ Den']},
+      {emojis:'🦁👨🙏🌙', answer:'Daniel in the Lions’ Den', wrong:['Jonah and the Big Fish','Samson and the Lion','The Walls of Jericho']},
+      {emojis:'🐑⭐👶🎁', answer:'The Birth of Jesus', wrong:['The Last Supper','The Walls of Jericho','Moses in the Basket']}],
+    books:{mode:'auto'},
+    where:[{item:'David and Goliath',book:'1 Samuel'},{item:'Daniel in the lions’ den',book:'Daniel'},{item:'Jonah and the big fish',book:'Jonah'},
+      {item:'The Ten Commandments',book:'Exodus'},{item:'The creation of the world',book:'Genesis'},{item:'“The Lord is my shepherd”',book:'Psalms'}]};
+}
+async function seedSampleChallenge(){
+  if(!dbReady) return;
+  try{
+    const maxSeq=[...STATE.lessons,...STATE.challenges].reduce((m,x)=>Math.max(m,x.seq||0),0);
+    await addDoc(collection(db,'lessons'), {...sampleChallenge(), seq:maxSeq+1, createdAt:serverTimestamp()});
+    flashMessage='Sample challenge added as a Draft. Edit it, then set it to Published when you are ready for children to see it.'; renderTeacher();
+  }catch(e){ alert('Could not add the sample. Check the connection.'); }
 }
 
 /* ===================== STARTER LESSON DATA (for the "Load starter lessons" button) ===================== */
@@ -2331,6 +3651,7 @@ function starterLessons(){
      memoryVerse:{text:"The Lord is with me; I am not afraid.", reference:"Psalm 23:4"},
      characters:[{name:"Shadrach, Meshach and Abednego", clue:"We are three young men who refused to bow down to the king's golden statue, even though we knew we could be thrown into the fire."},{name:"King Nebuchadnezzar", clue:"I am the king who built a golden statue and commanded everyone to worship it. I became furious when three young men refused."}],
      vocabulary:["SHADRACH","MESHACH","ABEDNEGO","FIRE","KING","GOD","FAITH","SHEPHERD"],
+     crossword:{"6-9":[{answer:"FIRE",clue:"The three men were thrown into a very hot ___"},{answer:"KING",clue:"Nebuchadnezzar was this"},{answer:"GOD",clue:"He was with the three men in the fire"},{answer:"FAITH",clue:"Trusting God with all your heart"},{answer:"SHEPHERD",clue:"Jesus is my ___ who leads me"},{answer:"SHADRACH",clue:"One of the three brave men (starts with S)"}],"10-12":[{answer:"SHADRACH",clue:"Hebrew friend who was given a Babylonian name and refused to bow"},{answer:"MESHACH",clue:"Second of the three young men in the fiery furnace"},{answer:"ABEDNEGO",clue:"Third of the three young men, who walked in the fire"},{answer:"NEBUCHADNEZZAR",clue:"King of Babylon who built the golden statue"},{answer:"FURNACE",clue:"The blazing oven the men were thrown into"},{answer:"IDOL",clue:"A false god made of gold that people were told to worship"},{answer:"OBEY",clue:"What the three men chose to do to God instead of the king"},{answer:"BABYLON",clue:"The great city where the story takes place"}]},
      quiz:[{q:"Why did Shadrach, Meshach and Abednego refuse to bow down to the golden statue?", options:["They loved and obeyed God","They were afraid of the king","They did not see the statue","They wanted to leave Babylon"], correct:0},
        {q:"What happened when the three men were thrown into the fire?", options:["They were burned","God protected them and they were not harmed","They ran away","The fire went out"], correct:1},
        {q:"Who threw Shadrach, Meshach and Abednego into the fire?", options:["Samuel","David","King Nebuchadnezzar","Moses"], correct:2},
@@ -2343,6 +3664,7 @@ function starterLessons(){
      memoryVerse:{text:"We are God's chosen and special people. We must tell all the wonderful things that He has done.", reference:"1 Peter 2:9"},
      characters:[{name:"David", clue:"I was a young shepherd boy. God chose me to become king, even though nobody expected it — God looked at my heart."},{name:"Samuel", clue:"I am the prophet God sent to find and anoint the next king with oil."}],
      vocabulary:["DAVID","SAMUEL","ANOINT","CHOSEN","KING","SHEPHERD","HEART","OIL"],
+     crossword:{"6-9":[{answer:"DAVID",clue:"The young shepherd boy God chose"},{answer:"SAMUEL",clue:"The prophet who found the new king"},{answer:"OIL",clue:"Poured on David's head"},{answer:"KING",clue:"What David was chosen to become"},{answer:"HEART",clue:"God looks at this, not how tall you are"},{answer:"CHOSEN",clue:"Picked out by God for a special plan"}],"10-12":[{answer:"DAVID",clue:"Youngest son of Jesse, a shepherd"},{answer:"SAMUEL",clue:"Prophet sent to Bethlehem to anoint a king"},{answer:"ANOINT",clue:"To pour oil on someone to set them apart for God"},{answer:"JESSE",clue:"David's father"},{answer:"BETHLEHEM",clue:"The town where David's family lived"},{answer:"SPIRIT",clue:"What came upon David after he was anointed"},{answer:"HEART",clue:"God looks at this, not outward appearance"},{answer:"SHEPHERD",clue:"What David did with his father's sheep"},{answer:"CHOSEN",clue:"Picked by God for a special purpose"}]},
      quiz:[{q:"Who did God send to find and anoint the new king?", options:["Samuel","Moses","Daniel","Peter"], correct:0},
        {q:"Why did God choose David to be king?", options:["He was the tallest","God saw his heart","He was the oldest son","He asked to be king"], correct:1},
        {q:"What does it mean that God \"anoints my head with oil\"?", options:["That God has chosen me","That I am in trouble","That I must go away","Nothing special"], correct:0},
@@ -2355,6 +3677,7 @@ function starterLessons(){
      memoryVerse:{text:"I am following Jesus with my whole heart.", reference:"Mark 10:28"},
      characters:[{name:"The Rich Young Ruler", clue:"I was a wealthy man who asked Jesus how to get eternal life — but I walked away sad because I loved my riches too much."},{name:"Jesus", clue:"I taught the rich young ruler that following me is worth more than any treasure on earth."}],
      vocabulary:["JESUS","TRUST","FOLLOW","LOVE","HEART","KINGDOM","OBEY","RICH"],
+     crossword:{"6-9":[{answer:"JESUS",clue:"The greatest treasure of all"},{answer:"MONEY",clue:"What the young ruler loved too much"},{answer:"LOVE",clue:"We should ___ God more than anything"},{answer:"SELL",clue:"Jesus told the man to ___ what he owned"},{answer:"OBEY",clue:"Doing what God says"},{answer:"HEART",clue:"Follow Jesus with your whole ___"}],"10-12":[{answer:"JESUS",clue:"He told the ruler to sell everything and follow Him"},{answer:"RULER",clue:"The rich young man was a young ___"},{answer:"ETERNAL",clue:"Never-ending life that the man asked about"},{answer:"TREASURE",clue:"Something very valuable — Jesus is the greatest"},{answer:"POSSESSIONS",clue:"Things you own"},{answer:"KINGDOM",clue:"Where God is King, the ___ of God"},{answer:"FOLLOW",clue:"What Jesus asked the man to do"},{answer:"TRUST",clue:"To depend on Jesus completely"}]},
      chooseBetter:[{bad:"Money 💰", good:"Jesus ✝️"},{bad:"Toys 🧸", good:"God's Word 📖"},{bad:"Disobey God 😖", good:"Obey God 🙂"},{bad:"Love Riches 💎", good:"Love God ❤️"},{bad:"Ignore God 😴", good:"Pray 🙏"}],
      quiz:[{q:"What did Jesus tell the rich young ruler to do?", options:["Sell his possessions and follow Jesus","Stay rich and follow Jesus","Build a bigger house","Ignore the poor"], correct:0},
        {q:"Why did the rich young ruler walk away sad?", options:["He loved his riches more than God","He didn't like Jesus","He was late for dinner","He had no money at all"], correct:0},
@@ -2367,6 +3690,7 @@ function starterLessons(){
      memoryVerse:{text:"I will live in the house of the Lord forever.", reference:"Psalm 23:6b (NLT)"},
      characters:[{name:"Mary", clue:"I sat near Jesus and listened to everything He said with my full attention."},{name:"Martha", clue:"I was busy preparing the food and the house, and I became worried because I was doing all the work alone."},{name:"Jesus", clue:"I visited the home of two sisters and gently taught them what matters most."}],
      vocabulary:["DWELLING","PRESENCE","LIVING","MARY","MARTHA","JESUS","HOUSE","ATTENTION","LISTENING"],
+     crossword:{"6-9":[{answer:"MARY",clue:"She sat and listened to Jesus"},{answer:"MARTHA",clue:"She was busy cooking and got worried"},{answer:"JESUS",clue:"He visited the two sisters"},{answer:"HOUSE",clue:"I will live in the ___ of the Lord"},{answer:"BIBLE",clue:"God talks to us through this book"},{answer:"LISTEN",clue:"What Mary did at Jesus' feet"}],"10-12":[{answer:"DWELLING",clue:"Another word for living in a place"},{answer:"PRESENCE",clue:"Being near God, in His company"},{answer:"ATTENTION",clue:"What Mary gave to every word Jesus said"},{answer:"MARTHA",clue:"The sister who was worried about many things"},{answer:"MARY",clue:"The sister who chose what is better"},{answer:"LISTENING",clue:"Hearing carefully with full attention"},{answer:"SERVING",clue:"What Martha was busy doing"},{answer:"WORRIED",clue:"How Martha felt about all the work"}]},
      quiz:[{q:"Who visited Martha and Mary's house?", options:["Jesus","Moses","A king","A teacher"], correct:0},
        {q:"What was Martha busy doing?", options:["Sleeping","Preparing food and the house","Reading a book","Singing songs"], correct:1},
        {q:"What was Mary doing while Martha worked?", options:["Cooking too","Sitting and listening to Jesus","Playing outside","Cleaning the house"], correct:1},
@@ -2396,8 +3720,14 @@ Object.assign(window, {
   showReflectSample, finishReflect, renderDeeperDive,
   renderColoring, setColoringTool, setBrushSize, selectColor, saveColoring, resetColoring, printColoring,
   renderDownloadsPage, handleDownloadFile, addDownload, deleteDownload,
+  selectArchiveLesson, selectWeeklyBoardLesson,
   zoomColoring, undoColoring, redoColoring,
   renderMaze, setMazeMode, printMaze,
+  renderCrossword, cwCheck, cwHint, cwClueClick, printCrossword,
+  renderChallengeScreen, setChallengeActivity, selectChallenge, chReplay, chPickAnother, selectChallengeBoard, setLeaderboardTab,
+  teacherEditChallenge, teacherPreviewChallenge, chCancel, toggleChallengeStatus, deleteChallenge, publishChallenge,
+  seedSampleChallenge, chAddRow, chRemoveRow,
+  cwAddRow, cwRemoveRow, cwFillVocab, cwPreview,
   navTo, teacherLogin, lockTeacher, teacherTab, teacherEdit, teacherPreview, cancelEdit, deleteLesson, toggleLessonStatus,
   addCharacterRow, removeCharacterRow, handleImageFile, removeDraftImage,
   handleColoringFile, removeDraftColoringImage,
