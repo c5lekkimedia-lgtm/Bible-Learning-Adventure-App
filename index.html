@@ -137,6 +137,16 @@
   .banner.ok{background:var(--green-light);color:var(--green);border:1px solid #B7E3C6}
   .banner.bad{background:#FDEBEB;color:#A32B2B;border:1px solid #F3C2C2}
   .toolbar{display:flex;gap:9px;flex-wrap:wrap;margin:12px 0}
+  /* Archives: theme tabs (level 1) and lesson tabs inside a theme (level 2) */
+  .theme-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 6px;padding-bottom:12px;border-bottom:2px solid var(--border)}
+  .theme-tab{border:2px solid var(--gold);background:var(--paper);color:var(--purple-dark);border-radius:14px;padding:9px 15px;
+    font-weight:800;font-size:14px;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:8px;text-align:left}
+  .theme-tab small{background:white;color:var(--muted);border-radius:20px;padding:2px 8px;font-size:11.5px;font-weight:700}
+  .theme-tab:hover{background:#FFEBB8}
+  .theme-tab.active{background:var(--purple);border-color:var(--purple);color:white}
+  .theme-tab.active small{background:rgba(255,255,255,.9);color:var(--purple)}
+  .theme-sub{margin:14px 0 2px;font-size:13px;color:var(--muted);font-weight:700}
+  .lesson-tab-topic{display:block;font-size:11.5px;font-weight:600;opacity:.85;margin-top:2px}
   .character-clue{background:var(--paper);border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:14px}
   .treasure-row{display:flex;align-items:center;gap:14px;background:white;border:1px solid var(--border);border-radius:14px;padding:12px 16px;margin-bottom:10px}
   .treasure-choice{flex:1;padding:11px;border-radius:11px;border:2px solid var(--border);cursor:pointer;text-align:center;font-weight:700;font-size:13.5px;font-family:inherit;background:#fff;color:var(--ink)}
@@ -310,12 +320,22 @@
   .coloring-gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px}
   .coloring-card{background:white;border:1px solid var(--border);border-radius:14px;padding:10px;text-align:center}
   .coloring-card img{width:100%;border-radius:8px;border:1px solid var(--border);margin-bottom:6px}
+  .coloring-card{cursor:pointer}
+  .coloring-card:hover{box-shadow:0 4px 14px rgba(107,63,160,.18)}
+  .mark-chip{display:inline-block;margin:6px 0 8px;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:800}
+  .mark-chip.todo{background:#FFF1D6;color:#9A6200}
+  .mark-chip.done{background:var(--green-light);color:var(--green)}
+  .mark-chip.changed{background:#E4EEFB;color:var(--blue)}
+  .mark-box{background:var(--green-light);border:1.5px solid #BFE5CD;border-radius:14px;padding:12px 16px;margin:10px 0}
+  .mark-box.pending{background:var(--paper);border-color:var(--border)}
+  .mark-total{font-weight:800;color:var(--purple);margin:6px 0 12px}
 </style>
 </head>
 <body>
 <div id="printArea"></div>
 <div id="configScreen" class="config-banner" style="display:none"></div>
 <div id="profileModal" class="modal-overlay hidden"><div class="modal-card" id="profileModalInner"></div></div>
+<div id="markModal" class="modal-overlay hidden"><div class="modal-card" id="markModalInner" style="max-width:680px"></div></div>
 <div class="app" id="appRoot" style="display:none">
   <aside>
     <div class="logo">🌟 BIBLE ADVENTURE<span>The Covenant Nation Lekki</span></div>
@@ -560,10 +580,35 @@ function loadLocalProgressCache(id){ try{ return JSON.parse(localStorage.getItem
 function saveLocalProgressCache(id,p){ try{ localStorage.setItem('bibleAdventureProgress_'+id, JSON.stringify(p)); }catch(e){} }
 async function persistProgress(){
   if(!activeProfileId) return;
-  saveLocalProgressCache(activeProfileId, PROGRESS);
+  const pid = activeProfileId, prog = PROGRESS;
+  // A teacher may have marked this child's coloring since this page loaded. Pull any
+  // teacher marks in first so this save can never wipe them out of the points total.
+  if(dbReady){
+    try{
+      const snap = await getDoc(doc(db,'progress',pid));
+      if(snap.exists() && syncTeacherMarks(prog, snap.data().scores) && pid===activeProfileId) renderPointsPill();
+    }catch(e){ /* offline: carry on with what we have */ }
+  }
+  saveLocalProgressCache(pid, prog);
   if(!dbReady){ setSyncPill('offline'); return; }
-  try{ await setDoc(doc(db,'progress',activeProfileId), PROGRESS, {merge:true}); setSyncPill('ok'); }
+  try{ await setDoc(doc(db,'progress',pid), prog, {merge:true}); setSyncPill('ok'); }
   catch(e){ console.error(e); setSyncPill('offline'); }
+}
+// Coloring = automatic submission points (child) + teacher marks, stored under their own score key
+// so they add into the same points total, weekly leaderboard and badges.
+const COLORING_SUBMIT_POINTS = 20;   // given automatically when the child saves their coloring
+const COLORING_TEACHER_MAX = 30;     // most the teacher can add after viewing the work
+const COLORING_TOTAL_POINTS = COLORING_SUBMIT_POINTS + COLORING_TEACHER_MAX;
+function teacherMarkKey(lessonId){ return lessonId+':coloringTeacher'; }
+function recomputePoints(prog){ prog.points = Object.values(prog.scores||{}).reduce((s,v)=>s+(Number(v.score)||0),0); }
+function syncTeacherMarks(prog, serverScores){
+  let changed=false;
+  Object.keys(serverScores||{}).filter(k=>k.endsWith(':coloringTeacher')).forEach(k=>{
+    const sv = Number(serverScores[k] && serverScores[k].score)||0, cur = prog.scores[k];
+    if(!cur || cur.score!==sv){ prog.scores[k] = {score:sv, max:COLORING_TEACHER_MAX}; changed=true; }
+  });
+  if(changed) recomputePoints(prog);
+  return changed;
 }
 async function loadProgressForActiveProfile(){
   if(!activeProfileId){ PROGRESS = normalizeProgress({}); return; }
@@ -915,7 +960,21 @@ function renderCurrentTheme(){
   el.innerHTML = `<h1>This Week's Lesson</h1>${lessonDetailHTML(l, "Play this week's activities")}
     ${hasPast?`<div class="toolbar" style="margin-top:14px"><button class="btn secondary" onclick="navTo('lesson',null)">🗂️ Past lessons in Archives</button></div>`:''}`;
 }
-// "Archives" (page id 'lesson'): every published lesson except the current one.
+// Group lessons by theme. Themes are matched ignoring case/extra spaces, so
+// "The Lord is my Shepherd" and "the lord is my  shepherd" land in the same tab.
+// Themes are ordered by their newest lesson; lessons inside a theme are newest first.
+function themeKeyOf(l){ return String(l.theme||'').trim().replace(/\s+/g,' ').toLowerCase(); }
+function groupLessonsByTheme(list){
+  const map = new Map();
+  list.slice().sort(lessonNewerFirst).forEach(l=>{
+    const k = themeKeyOf(l);
+    if(!map.has(k)) map.set(k, {key:k, label:(String(l.theme||'').trim().replace(/\s+/g,' ') || 'Other lessons'), lessons:[]});
+    map.get(k).lessons.push(l);
+  });
+  return Array.from(map.values());   // insertion order = newest theme first
+}
+// "Archives" (page id 'lesson'): every published lesson except the current one,
+// grouped into theme tabs. Click a theme, then pick a lesson inside it.
 function renderLessonScreen(){
   const el = document.getElementById('lesson');
   if(!STATE.lessons.length){ el.innerHTML = `<div class="banner warn">No lessons yet.</div>`; return; }
@@ -936,9 +995,18 @@ function renderLessonScreen(){
     if(!archiveLessonId || !past.some(x=>x.id===archiveLessonId)) archiveLessonId = past[0].id;
     l = getLesson(archiveLessonId);
   }
+  // In teacher preview the previewed lesson may be a draft or the current lesson; include it so its tabs show.
+  const pool = (teacherPreviewMode && l && !past.some(x=>x.id===l.id)) ? past.concat([l]) : past;
+  const groups = groupLessonsByTheme(pool);
+  const activeKey = themeKeyOf(l);
+  const activeGroup = groups.find(g=>g.key===activeKey) || groups[0];
+  const themeTabs = groups.map(g=>`<button class="theme-tab ${g.key===activeGroup.key?'active':''}" onclick="selectArchiveLesson('${g.lessons[0].id}')" aria-pressed="${g.key===activeGroup.key}">🎯 ${esc(g.label)} <small>${g.lessons.length} ${g.lessons.length===1?'lesson':'lessons'}</small></button>`).join('');
+  const lessonTabs = activeGroup.lessons.map(x=>`<button class="btn ${x.id===l.id?'':'secondary'}" onclick="selectArchiveLesson('${x.id}')">${esc(x.date)}<span class="lesson-tab-topic">${esc(x.topic||'')}</span></button>`).join('');
   el.innerHTML = `
     <h1>${heading}</h1>
-    <div class="toolbar">${past.map(x=>`<button class="btn ${x.id===l.id?'':'secondary'}" onclick="selectArchiveLesson('${x.id}')">${esc(x.date)}</button>`).join('')}</div>
+    <div class="theme-tabs" role="tablist" aria-label="Themes">${themeTabs}</div>
+    <div class="theme-sub">Lessons under “${esc(activeGroup.label)}”</div>
+    <div class="toolbar" style="margin-top:6px">${lessonTabs}</div>
     ${teacherPreviewMode && (l.status||'Published')!=='Published' ? `<div class="banner warn">👀 Teacher preview — this lesson is currently <strong>${esc(lessonStatus(l))}</strong> and not visible to children.</div>` : ''}
     ${lessonDetailHTML(l, "Play this lesson's activities")}`;
 }
@@ -1485,7 +1553,8 @@ const COLORING_HISTORY_LIMIT = 15;
 async function renderColoring(l, box){
   if(!l.coloringImage){ box.innerHTML='<p class="muted">No coloring page has been added for this lesson yet.</p>'; return; }
   const token = renderToken;
-  box.innerHTML = `<h2>🎨 Coloring page</h2><p class="muted">Pick a color, then paint with the brush or tap inside a shape to fill it.</p>
+  box.innerHTML = `<h2>🎨 Coloring page</h2><p class="muted">Pick a color, then paint with the brush or tap inside a shape to fill it. Saving earns ${COLORING_SUBMIT_POINTS} points, and your teacher can add up to ${COLORING_TEACHER_MAX} more after seeing your work!</p>
+    <div id="colorMarkBox"></div>
     <div class="color-palette" id="colorPalette"></div>
     <div class="toolbar">
       <button class="btn secondary tool-btn" id="toolBrush" onclick="setColoringTool('brush')">🖌️ Brush</button>
@@ -1527,6 +1596,7 @@ async function renderColoring(l, box){
       const snap = await getDoc(doc(db,'colorings', activeProfileId+'_'+l.id));
       if(token!==renderToken) return; // navigated away while loading
       if(snap.exists() && snap.data().image) src = snap.data().image;
+      if(snap.exists()) showChildMark(l.id, snap.data());
     }catch(e){ /* fall back to the blank template */ }
   }
   if(token!==renderToken) return;
@@ -1684,10 +1754,10 @@ async function saveColoring(lessonId){
       await setDoc(doc(db,'colorings', activeProfileId+'_'+lessonId), {
         profileId: activeProfileId, childName: (profile&&profile.name)||'', lessonId,
         image: out, savedAt: Date.now()
-      });
+      }, {merge:true});   // merge: never wipe a teacher's mark when a child re-saves
     }
-    recordActivityScore(lessonId,'coloring', 20, 20, true);
-    msg.textContent='🎉 Saved! Your teacher can see your coloring.'; msg.style.color='#1E8A4C';
+    recordActivityScore(lessonId,'coloring', COLORING_SUBMIT_POINTS, COLORING_SUBMIT_POINTS, true);
+    msg.textContent='🎉 Saved! +'+COLORING_SUBMIT_POINTS+' points. Your teacher can see your coloring and may add up to '+COLORING_TEACHER_MAX+' more.'; msg.style.color='#1E8A4C';
   }catch(e){ console.error(e); msg.textContent='Could not save right now — check the connection and try again.'; msg.style.color='#A32B2B'; }
 }
 function printColoring(){
@@ -1706,21 +1776,113 @@ async function fetchAllColorings(){
   const snap = await getDocs(collection(db,'colorings'));
   return snap.docs.map(d=>({id:d.id, ...d.data()}));
 }
-async function renderColoringsGallery(){
-  const items = await fetchAllColorings();
-  items.sort((a,b)=>(b.savedAt||0)-(a.savedAt||0));
+/* ---- Child sees the teacher's mark ---- */
+function showChildMark(lessonId, data){
+  const el = document.getElementById('colorMarkBox'); if(!el) return;
+  const marked = data && data.teacherMark!=null;
+  if(marked){
+    // keep this device's points in step with what the teacher awarded
+    const k = teacherMarkKey(lessonId);
+    if(syncTeacherMarks(PROGRESS, {[k]:{score:data.teacherMark}})) renderPointsPill();
+    el.innerHTML = `<div class="mark-box"><strong>⭐ Teacher's mark: ${data.teacherMark} / ${COLORING_TEACHER_MAX}</strong>
+      · Coloring total: <strong>${COLORING_SUBMIT_POINTS+Number(data.teacherMark)} / ${COLORING_TOTAL_POINTS}</strong>
+      ${data.teacherComment?`<div style="margin-top:6px">💬 “${esc(data.teacherComment)}”</div>`:''}</div>`;
+  } else if(data && data.image){
+    el.innerHTML = `<div class="mark-box pending">⏳ Your teacher hasn't marked this yet — up to ${COLORING_TEACHER_MAX} more points are waiting!</div>`;
+  }
+}
+
+/* ---- Teacher: view and mark colorings ---- */
+let COLORING_ITEMS = [], coloringFilter = 'all';
+function coloringStatus(it){
+  if(it.teacherMark==null) return 'todo';
+  return (it.savedAt||0) > (it.markedAt||0) ? 'changed' : 'done';
+}
+function coloringsGalleryHTML(){
+  const items = COLORING_ITEMS.slice().sort((a,b)=>(b.savedAt||0)-(a.savedAt||0));
   if(!items.length) return `<p class="muted">No coloring pages have been saved yet.</p>`;
-  return `<div class="coloring-gallery">
-    ${items.map(it=>{
-      const lesson = getLesson(it.lessonId);
-      return `<div class="coloring-card">
+  const todo = items.filter(it=>coloringStatus(it)!=='done').length;
+  const shown = items.filter(it=> coloringFilter==='all' ? true : coloringFilter==='todo' ? coloringStatus(it)!=='done' : coloringStatus(it)==='done');
+  const fb = (k,label)=>`<button class="btn ${coloringFilter===k?'':'secondary'}" onclick="setColoringFilter('${k}')">${label}</button>`;
+  return `<p class="muted">Children get <strong>${COLORING_SUBMIT_POINTS} points</strong> automatically for saving. Open a coloring to give up to <strong>${COLORING_TEACHER_MAX} more</strong> (max ${COLORING_TOTAL_POINTS} in total).</p>
+    <div class="toolbar">${fb('all','All ('+items.length+')')}${fb('todo','⏳ Needs marking ('+todo+')')}${fb('done','✅ Marked ('+(items.length-todo)+')')}</div>
+    ${shown.length ? `<div class="coloring-gallery">
+    ${shown.map(it=>{
+      const lesson = getLesson(it.lessonId); const st = coloringStatus(it);
+      const chip = st==='todo' ? `<span class="mark-chip todo">⏳ Needs marking</span>`
+        : st==='changed' ? `<span class="mark-chip changed">🔄 Changed since marked (${it.teacherMark}/${COLORING_TEACHER_MAX})</span>`
+        : `<span class="mark-chip done">✅ ${it.teacherMark} / ${COLORING_TEACHER_MAX}</span>`;
+      return `<div class="coloring-card" onclick="openColoringMark('${esc(it.id)}')">
         <img src="${it.image}" alt="Coloring by ${esc(it.childName||'a child')}">
         <strong>${esc(it.childName||'(no name)')}</strong>
         <div class="muted">${esc(lesson?lesson.topic:'Lesson removed')}</div>
         <div class="muted" style="font-size:11px">${esc(relativeTime(it.savedAt))}</div>
+        <div>${chip}</div>
+        <button class="btn secondary" style="padding:6px 12px;font-size:12.5px">${st==='done'?'View / edit mark':'View & mark'}</button>
       </div>`;
     }).join('')}
-  </div>`;
+  </div>` : `<p class="muted">Nothing here.</p>`}`;
+}
+async function renderColoringsGallery(){
+  COLORING_ITEMS = await fetchAllColorings();
+  return coloringsGalleryHTML();
+}
+function setColoringFilter(f){ coloringFilter=f; const c=document.getElementById('coloringsCard'); if(c) c.innerHTML=coloringsGalleryHTML(); }
+function closeColoringMark(){ document.getElementById('markModal').classList.add('hidden'); }
+function openColoringMark(id){
+  const it = COLORING_ITEMS.find(x=>x.id===id); if(!it) return;
+  const lesson = getLesson(it.lessonId);
+  const has = it.teacherMark!=null;
+  document.getElementById('markModalInner').innerHTML = `
+    <h2>🎨 ${esc(it.childName||'(no name)')}'s coloring</h2>
+    <p class="muted">${esc(lesson?lesson.topic:'Lesson removed')} · saved ${esc(relativeTime(it.savedAt))}${coloringStatus(it)==='changed'?' · <strong>changed since you marked it</strong>':''}</p>
+    <img src="${it.image}" alt="Coloring by ${esc(it.childName||'a child')}" style="width:100%;border-radius:10px;border:1px solid var(--border);background:#fff">
+    <div style="margin-top:14px">
+      <label class="field" for="markInput">Your mark (0–${COLORING_TEACHER_MAX})</label>
+      <input class="input" id="markInput" type="number" min="0" max="${COLORING_TEACHER_MAX}" step="1" value="${has?it.teacherMark:''}" oninput="updateMarkTotal()" placeholder="0 – ${COLORING_TEACHER_MAX}">
+      <div class="mark-total" id="markTotal"></div>
+      <label class="field" for="markComment">Comment for the child (optional)</label>
+      <input class="input" id="markComment" maxlength="140" value="${esc(it.teacherComment||'')}" placeholder="e.g. Lovely colours — well done!">
+      <div id="markMsg" class="feedback" role="status"></div>
+      <div class="toolbar">
+        <button class="btn" onclick="saveColoringMark('${esc(it.id)}')">💾 ${has?'Update mark':'Save mark'}</button>
+        <button class="btn secondary" onclick="closeColoringMark()">Close</button>
+      </div>
+    </div>`;
+  document.getElementById('markModal').classList.remove('hidden');
+  updateMarkTotal();
+}
+function updateMarkTotal(){
+  const v = document.getElementById('markInput').value; const out = document.getElementById('markTotal');
+  const n = v===''?null:Number(v);
+  out.textContent = (n===null||isNaN(n)) ? `Submission points already given: ${COLORING_SUBMIT_POINTS}. Enter your mark to add to them.`
+    : `${COLORING_SUBMIT_POINTS} (submission) + ${Math.max(0,Math.min(COLORING_TEACHER_MAX,Math.round(n)))} (your mark) = ${COLORING_SUBMIT_POINTS+Math.max(0,Math.min(COLORING_TEACHER_MAX,Math.round(n)))} / ${COLORING_TOTAL_POINTS} points`;
+}
+async function saveColoringMark(id){
+  const it = COLORING_ITEMS.find(x=>x.id===id); if(!it) return;
+  const msg = document.getElementById('markMsg');
+  const raw = document.getElementById('markInput').value;
+  const mark = Number(raw);
+  if(raw==='' || isNaN(mark) || mark<0 || mark>COLORING_TEACHER_MAX || !Number.isInteger(mark)){
+    msg.textContent = `Enter a whole number from 0 to ${COLORING_TEACHER_MAX}.`; msg.style.color='#A32B2B'; return;
+  }
+  const comment = document.getElementById('markComment').value.trim().slice(0,140);
+  msg.textContent='Saving…'; msg.style.color='#6B6178';
+  try{
+    const now = Date.now();
+    await updateDoc(doc(db,'colorings',id), {teacherMark:mark, teacherComment:comment, markedAt:now});
+    // Add the mark to the child's points so leaderboards and badges pick it up
+    // even if the child never reopens the app.
+    const pref = doc(db,'progress',it.profileId);
+    const psnap = await getDoc(pref);
+    const scores = Object.assign({}, (psnap.exists() && psnap.data().scores) || {});
+    scores[teacherMarkKey(it.lessonId)] = {score:mark, max:COLORING_TEACHER_MAX};
+    const points = Object.values(scores).reduce((s,v)=>s+(Number(v.score)||0),0);
+    await setDoc(pref, {scores:{[teacherMarkKey(it.lessonId)]:{score:mark, max:COLORING_TEACHER_MAX}}, points}, {merge:true});
+    Object.assign(it, {teacherMark:mark, teacherComment:comment, markedAt:now});
+    const c=document.getElementById('coloringsCard'); if(c) c.innerHTML=coloringsGalleryHTML();
+    closeColoringMark();
+  }catch(e){ console.error(e); msg.textContent='Could not save the mark — check the connection and try again.'; msg.style.color='#A32B2B'; }
 }
 
 /* ---- Downloads (teacher admin) ---- */
@@ -3721,6 +3883,7 @@ Object.assign(window, {
   renderColoring, setColoringTool, setBrushSize, selectColor, saveColoring, resetColoring, printColoring,
   renderDownloadsPage, handleDownloadFile, addDownload, deleteDownload,
   selectArchiveLesson, selectWeeklyBoardLesson,
+  setColoringFilter, openColoringMark, closeColoringMark, updateMarkTotal, saveColoringMark,
   zoomColoring, undoColoring, redoColoring,
   renderMaze, setMazeMode, printMaze,
   renderCrossword, cwCheck, cwHint, cwClueClick, printCrossword,
