@@ -86,6 +86,22 @@
   .activity-nav button{border:1.5px solid #D8C4EE;background:white;color:var(--purple);border-radius:11px;
     padding:9px 13px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
   .activity-nav button.active,.activity-nav button:hover{background:var(--purple);color:white;border-color:var(--purple)}
+  /* ---- Bible Jigsaw ---- */
+  .jig-controls{display:grid;gap:8px;margin:8px 0 4px}
+  .jig-slider{max-width:480px}
+  .jig-slider input[type=range]{width:100%;accent-color:var(--purple);margin:6px 0 0}
+  .jig-slider input[type=range]:disabled{opacity:.45;cursor:not-allowed}
+  .jig-ticks{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);font-weight:800;padding:0 2px}
+  .jig-lock{font-size:13px;font-weight:700;color:var(--purple-dark);background:#F3E9FF;border-radius:10px;padding:8px 12px;max-width:640px}
+  .jig-stage{background:#F6EFFC;border:2px dashed #D8C4EE;border-radius:16px;padding:6px;line-height:0;margin-top:6px}
+  .jig-stage svg{width:100%;height:auto;max-height:78vh;touch-action:none;user-select:none;-webkit-user-select:none;display:block}
+  .jp.loose{cursor:grab}
+  .jp.drag{cursor:grabbing;filter:drop-shadow(3px 6px 5px rgba(0,0,0,.4))}
+  .jp.dim{opacity:.2}
+  .jp.snap{animation:jpSnap .4s}
+  @keyframes jpSnap{0%{filter:brightness(1.7)}100%{filter:none}}
+  .jig-stage.complete .jp path,.jig-stage.complete .jig-guide{stroke-opacity:0;transition:stroke-opacity .8s}
+  .jig-win{background:var(--green-light);border:2px solid var(--green);border-radius:14px;padding:12px 16px;margin:12px 0;font-weight:800;color:#14663A;line-height:1.4}
   .question{font-size:19px;font-weight:800;margin:10px 0 16px;color:var(--purple-dark)}
   .options{display:grid;grid-template-columns:repeat(2,1fr);gap:11px}
   .option{padding:14px;background:var(--paper);border:2px solid var(--border);border-radius:13px;cursor:pointer;
@@ -310,6 +326,11 @@
   #coloringCanvas{max-width:100%;height:auto;touch-action:none;border-radius:8px;background:#fff;cursor:crosshair}
   #coloringCanvas.zoomed{max-width:none}
   .tool-btn.active{background:var(--purple) !important;color:#fff !important;border-color:var(--purple) !important}
+  .maze-level{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:10px 0 2px}
+  .maze-level .lvl-title{font-weight:800;color:var(--purple-dark)}
+  .maze-level .lvl-end{font-size:12.5px;font-weight:700;color:var(--muted)}
+  .maze-level input[type=range]{flex:1 1 170px;max-width:320px;height:30px;accent-color:var(--purple);cursor:pointer}
+  .maze-level #mazeLevelLabel{font-weight:800;min-width:150px}
   .maze-grid{display:grid;gap:0;margin:16px auto;width:max-content;user-select:none;touch-action:none}
   .maze-cell{box-sizing:border-box;display:flex;align-items:center;justify-content:center;background:#fff;
     font-size:15px;position:relative}
@@ -1026,6 +1047,7 @@ function renderActivityScreen(){
   if(l.mazeEnabled !== false) types.push(['maze','🐾 Maze']);
   if(l.chooseBetter) types.push(['choose','💎 Choose the treasure']);
   if(l.coloringImage) types.push(['coloring','🎨 Coloring page']);
+  if(l.jigsawImage) types.push(['jigsaw','🖼️ Bible Jigsaw']);
   if(ageKey()==='3-5') types.splice(1,0,['count','🔢 Counting fun']);
   if(ageKey()==='10-12') types.push(['deeper','🧭 Deeper dive']);
   if((challengePreviewMode ? STATE.challenges : publishedChallenges()).length) types.push(['challenge','🏁 Weekly Challenge']);
@@ -1055,6 +1077,7 @@ function renderActivityContent(){
   if(currentActivity==='coloring') return renderColoring(l, box);
   if(currentActivity==='maze') return renderMaze(l, box);
   if(currentActivity==='crossword') return renderCrossword(l, box);
+  if(currentActivity==='jigsaw') return renderJigsaw(l, box);
   if(currentActivity==='challenge') return renderChallengePanel(box);
 }
 function bankedLine(lessonId, type, max){
@@ -1983,12 +2006,31 @@ function generateMaze(size){
   carve(0,0);
   return cells;
 }
-// Bigger, harder maze for older age groups.
-function mazeSettings(){
-  const age=ageKey();
-  if(age==='3-5') return {size:6, cell:46};
-  if(age==='10-12') return {size:13, cell:30};
-  return {size:9, cell:38};
+// Bigger, harder maze for older age groups. Level 1 of the difficulty slider is
+// exactly this starting size; each level up adds 2 rows and 2 columns.
+const MAZE_LEVELS = 5, MAZE_LEVEL_STEP = 2, MAZE_MIN_CELL = 24;
+let mazeLevel = 1;
+function mazeSettingsFor(level){
+  const age = ageKey();
+  const base = age==='3-5' ? {size:6, cell:46} : age==='10-12' ? {size:13, cell:30} : {size:9, cell:38};
+  const size = base.size + (level-1)*MAZE_LEVEL_STEP;
+  // Level 1 keeps today's cell size. Bigger mazes shrink the cells so the board stays
+  // about the same width, but never below a size a finger can still tap.
+  const cell = level===1 ? base.cell : Math.max(MAZE_MIN_CELL, Math.floor(base.size*base.cell/size));
+  return {size, cell};
+}
+function mazeSettings(){ return mazeSettingsFor(mazeLevel); }
+function mazeLevelLabel(level){ const {size}=mazeSettingsFor(level); return `Level ${level} of ${MAZE_LEVELS} · ${size} × ${size}`; }
+// While the slider is being dragged, only the label changes; the new maze is built when it is released.
+function mazeLevelPreview(v){
+  const level = Math.max(1, Math.min(MAZE_LEVELS, parseInt(v,10)||1));
+  const lab = document.getElementById('mazeLevelLabel'); if(lab) lab.textContent = mazeLevelLabel(level);
+  const sl = document.getElementById('mazeLevel'); if(sl) sl.setAttribute('aria-valuetext', mazeLevelLabel(level));
+}
+function setMazeLevel(v){
+  mazeLevel = Math.max(1, Math.min(MAZE_LEVELS, parseInt(v,10)||1));
+  renderMaze(getLesson(currentLessonId), document.getElementById('activityBox'));
+  const sl = document.getElementById('mazeLevel'); if(sl) sl.focus();   // keep keyboard users on the slider
 }
 function mazeConnected(a,b){
   if(!mazeGrid) return false;
@@ -2021,6 +2063,14 @@ function renderMaze(l, box){
       <button class="btn secondary tool-btn" id="mazeModeTrace" onclick="setMazeMode('trace')">✍️ Trace the path</button>
       <button class="btn secondary" onclick="renderMaze(getLesson(currentLessonId), document.getElementById('activityBox'))">🔀 New maze</button>
       <button class="btn secondary" onclick="printMaze()">🖨️ Print this maze</button>
+    </div>
+    <div class="maze-level">
+      <label class="lvl-title" for="mazeLevel">Difficulty</label>
+      <span class="lvl-end">Easiest</span>
+      <input type="range" id="mazeLevel" min="1" max="${MAZE_LEVELS}" step="1" value="${mazeLevel}"
+        aria-valuetext="${esc(mazeLevelLabel(mazeLevel))}" oninput="mazeLevelPreview(this.value)" onchange="setMazeLevel(this.value)">
+      <span class="lvl-end">Hardest</span>
+      <span id="mazeLevelLabel">${esc(mazeLevelLabel(mazeLevel))}</span>
     </div>
     <div class="grid-scroll"><div class="maze-grid" id="mazeGridEl" style="grid-template-columns:repeat(${size},${cell}px)"></div></div>
     <div id="mazeFeedback" class="feedback" role="status"></div>`;
@@ -2598,6 +2648,294 @@ async function renderOverallLeaderboard(){
   });
 }
 
+/* ---- Jigsaw geometry: classic tabs & blanks ---- */
+// Shape of a knob along an edge of length 1, v = outward height (before sign).
+function jpEdgeSegs(x0,y0,x1,y1,sign,m,rnd){
+  // m = depth unit (min cell side); rnd() -> [0,1)
+  const dx=x1-x0, dy=y1-y0, L=Math.hypot(dx,dy), ux=dx/L, uy=dy/L, nx=-uy*sign, ny=ux*sign;
+  const ds=(rnd()-.5)*.08, k=.94+rnd()*.14, D=m/L*k;     // jitter: knob position and size
+  const P=(u,v)=>[x0+ux*L*(u+((u>.3&&u<.7)?ds:0))+nx*L*v*D, y0+uy*L*(u+((u>.3&&u<.7)?ds:0))+ny*L*v*D];
+  const segs=[];
+  const L_=(u,v)=>segs.push({t:'L',to:P(u,v)});
+  const C_=(a,b,c,d,e,f)=>segs.push({t:'C',c1:P(a,b),c2:P(c,d),to:P(e,f)});
+  L_(.355,0);
+  C_(.42,0,   .41,.03,  .40,.075);      // left side of the neck
+  C_(.385,.13, .31,.15, .325,.235);     // swell out to the left of the head
+  C_(.34,.31, .43,.32, .50,.32);        // over the top (left half)
+  C_(.57,.32, .66,.31, .675,.235);      // over the top (right half)
+  C_(.69,.15, .615,.13, .60,.075);      // back in to the right neck
+  C_(.59,.03, .58,0,    .645,0);        // right side of the neck
+  L_(1,0);
+  return {start:[x0,y0], segs};
+}
+function jpStraight(x0,y0,x1,y1){ return {start:[x0,y0], segs:[{t:'L',to:[x1,y1]}]}; }
+function jpReverse(e){
+  // same curve walked the other way
+  const pts=[e.start]; e.segs.forEach(s=>pts.push(s.to));
+  const out=[];
+  for(let i=e.segs.length-1;i>=0;i--){
+    const s=e.segs[i];
+    out.push(s.t==='L' ? {t:'L',to:pts[i]} : {t:'C',c1:s.c2,c2:s.c1,to:pts[i]});
+  }
+  return {start:pts[pts.length-1], segs:out};
+}
+const jpF=n=>(Math.round(n*100)/100);
+function jpSegD(e){ return e.segs.map(s=>s.t==='L' ? 'L'+jpF(s.to[0])+' '+jpF(s.to[1]) :
+  'C'+jpF(s.c1[0])+' '+jpF(s.c1[1])+' '+jpF(s.c2[0])+' '+jpF(s.c2[1])+' '+jpF(s.to[0])+' '+jpF(s.to[1])).join(''); }
+
+// Build every piece of a cols x rows puzzle on a W x H board.
+function jpBuild(cols,rows,W,H,rnd){
+  const w=W/cols, h=H/rows, m=Math.min(w,h);
+  const Hh=[], Vv=[];                       // canonical edges: H goes left->right, V goes top->bottom
+  for(let r=0;r<=rows;r++){ Hh[r]=[]; for(let c=0;c<cols;c++){
+    Hh[r][c] = (r===0||r===rows) ? jpStraight(c*w,r*h,(c+1)*w,r*h) : jpEdgeSegs(c*w,r*h,(c+1)*w,r*h, rnd()<.5?1:-1, m, rnd); } }
+  for(let r=0;r<rows;r++){ Vv[r]=[]; for(let c=0;c<=cols;c++){
+    Vv[r][c] = (c===0||c===cols) ? jpStraight(c*w,r*h,c*w,(r+1)*h) : jpEdgeSegs(c*w,r*h,c*w,(r+1)*h, rnd()<.5?1:-1, m, rnd); } }
+  const pieces=[];
+  for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){
+    const top=Hh[r][c], right=Vv[r][c+1], bottom=jpReverse(Hh[r+1][c]), left=jpReverse(Vv[r][c]);
+    const d='M'+jpF(c*w)+' '+jpF(r*h)+jpSegD(top)+jpSegD(right)+jpSegD(bottom)+jpSegD(left)+'Z';
+    const isEdge = r===0||c===0||r===rows-1||c===cols-1;
+    const isCorner = (r===0||r===rows-1)&&(c===0||c===cols-1);
+    pieces.push({r,c,d,isEdge,isCorner,cx:c*w+w/2,cy:r*h+h/2});
+  }
+  return {pieces,w,h,m};
+}
+
+/* ===================== BIBLE JIGSAW ===================== */
+// Piece counts per age group: the first number is the starting size, the last is the hardest.
+const JIG_LEVELS = {'3-5':[6,8,9,10,12], '6-9':[16,20,24,28,32], '10-12':[24,30,36,42,48]};
+const JIG_POINTS = 20;   // finishing the starting size earns 20; finishing any harder size (first time) earns 20 more
+let J = null, jigLevelIdx = 0;
+function jigLevels(){ return JIG_LEVELS[ageKey()] || JIG_LEVELS['6-9']; }
+function jigScore(lessonId){ return (PROGRESS.scores[lessonId+':jigsaw']||{score:0}).score||0; }
+function jigUnlocked(lessonId){ return jigScore(lessonId) >= JIG_POINTS; }
+// Pick the cols x rows split of n whose shape best matches the picture (portrait pictures get tall puzzles).
+function jigGrid(n, aspect){
+  let best=null;
+  for(let r=2;r<=n;r++){
+    if(n%r) continue; const c=n/r;
+    if(Math.min(c,r)<2 || Math.max(c,r)/Math.min(c,r)>2.5) continue;
+    const err=Math.abs(Math.log(c/r)-Math.log(aspect));
+    if(!best || err<best.err) best={cols:c, rows:r, err};
+  }
+  return best || {cols:n, rows:1};
+}
+function jigControlsHTML(l){
+  const levels=jigLevels(), unlocked=jigUnlocked(l.id), score=jigScore(l.id);
+  if(!unlocked) jigLevelIdx=0;
+  if(jigLevelIdx>levels.length-1) jigLevelIdx=levels.length-1;
+  const lock = !unlocked
+    ? `🔒 Finish the <strong>${levels[0]}-piece</strong> puzzle first to unlock the difficulty slider.`
+    : score>=2*JIG_POINTS
+      ? `🔓 You have earned every point for this puzzle. Keep playing at any size to grow your badges!`
+      : `🔓 Slider unlocked! Finish a <strong>harder</strong> puzzle once to earn <strong>+${JIG_POINTS} bonus points</strong>. After that, extra plays earn badges only.`;
+  return `<div class="jig-controls">
+    <div class="jig-slider"><label for="jigRange" class="muted" style="font-weight:800">Difficulty: <strong id="jigCount" style="color:var(--purple-dark)">${levels[jigLevelIdx]} pieces</strong></label>
+      <input type="range" id="jigRange" min="0" max="${levels.length-1}" step="1" value="${jigLevelIdx}" ${unlocked?'':'disabled'}
+        oninput="jigSliderInput(this.value)" onchange="jigSliderChange(this.value)">
+      <div class="jig-ticks">${levels.map(n=>`<span>${n}</span>`).join('')}</div></div>
+    <div class="jig-lock" id="jigLock">${lock}</div>
+    <div class="toolbar" style="margin:4px 0 0">
+      <button class="btn secondary" id="jigPeekBtn" onclick="jigPeek()">👁️ Peek at the picture</button>
+      <button class="btn secondary" id="jigEdgeBtn" onclick="jigEdges()">🔲 Edges first</button>
+      <button class="btn secondary" onclick="jigShuffle()">🔀 New puzzle</button></div>
+    <p class="muted" style="margin:2px 0 0;font-size:13px">💡 Start with the <strong>corners</strong> (two flat sides), then the <strong>edges</strong> (one flat side). Pieces with a <strong>tab</strong> stick out; pieces with a <strong>blank</strong> have a hole that takes a tab.</p>
+  </div>`;
+}
+function renderJigsaw(l, box){
+  if(!l.jigsawImage){ box.innerHTML='<p class="muted">No jigsaw has been added for this lesson yet.</p>'; return; }
+  const token = renderToken;
+  box.innerHTML = `<h2>🖼️ Bible Jigsaw</h2>
+    <p class="muted">Drag each piece to where it belongs. Pieces click into place when they are close. Who or what is in the picture?</p>
+    ${jigControlsHTML(l)}
+    <div id="jigStatus" class="ch-status" aria-live="polite"></div>
+    <div class="jig-stage" id="jigStage"></div>
+    <div id="jigResult" aria-live="polite"></div>
+    <p class="muted" id="jigBanked" style="margin-top:8px">${bankedLine(l.id,'jigsaw',2*JIG_POINTS)}</p>`;
+  const img=new Image();
+  img.onload=()=>{ if(token!==renderToken) return; J={l, aspect:(img.naturalWidth||4)/(img.naturalHeight||3)}; jigStart(); };
+  img.onerror=()=>{ const st=document.getElementById('jigStage'); if(st) st.innerHTML='<p class="muted" style="line-height:1.4;padding:12px">This picture could not be loaded.</p>'; };
+  img.src=l.jigsawImage;
+}
+function jigStart(){
+  const stage=document.getElementById('jigStage'); if(!stage||!J) return;
+  const l=J.l, n=jigLevels()[jigLevelIdx], {cols,rows}=jigGrid(n,J.aspect);
+  const W=1000, H=Math.round(W/J.aspect);
+  const g=jpBuild(cols,rows,W,H,Math.random);
+  const cell=Math.max(g.w,g.h), M=Math.round(cell*1.4);
+  const uid='j'+Date.now().toString(36);
+  J.n=n; J.cols=cols; J.rows=rows; J.W=W; J.H=H; J.M=M; J.cell=cell; J.snap=g.m*0.32;
+  J.placed=0; J.total=g.pieces.length; J.done=false; J.drag=null; J.edgesOnly=false;
+  // Scatter the loose pieces around the board (never on top of it).
+  J.pieces=g.pieces.map(p=>{
+    let cx=0, cy=0;
+    for(let t=0;t<300;t++){
+      cx=-M+cell*.5+Math.random()*(W+2*M-cell); cy=-M+cell*.5+Math.random()*(H+2*M-cell);
+      if(cx<-g.w*.2||cx>W+g.w*.2||cy<-g.h*.2||cy>H+g.h*.2) break;
+    }
+    return Object.assign({}, p, {tx:cx-p.cx, ty:cy-p.cy, placed:false});
+  });
+  const clips=J.pieces.map((p,i)=>`<clipPath id="${uid}c${i}"><path d="${p.d}"/></clipPath>`).join('');
+  const pieceEls=J.pieces.map((p,i)=>`<g class="jp loose ${p.isEdge?'edge':'inner'}" data-i="${i}" transform="translate(${jpF(p.tx)} ${jpF(p.ty)})">
+      <g clip-path="url(#${uid}c${i})"><use href="#${uid}pic"/></g>
+      <path d="${p.d}" fill="transparent" stroke="rgba(40,20,70,.6)" stroke-width="2.2" stroke-linejoin="round" pointer-events="all"/></g>`).join('');
+  stage.classList.remove('complete');
+  stage.innerHTML=`<svg viewBox="${-M} ${-M} ${W+2*M} ${H+2*M}" role="img" aria-label="Jigsaw puzzle board">
+    <defs><image id="${uid}pic" href="${l.jigsawImage}" x="0" y="0" width="${W}" height="${H}" preserveAspectRatio="none"/>${clips}</defs>
+    <rect x="0" y="0" width="${W}" height="${H}" fill="#fff" fill-opacity=".7" stroke="#B79ADB" stroke-width="3" stroke-dasharray="14 10"/>
+    <use id="jigGhost" href="#${uid}pic" opacity="0" pointer-events="none"/>
+    <g class="jig-guide" fill="none" stroke="rgba(107,63,160,.22)" stroke-width="1.5" pointer-events="none">${J.pieces.map(p=>`<path d="${p.d}"/>`).join('')}</g>
+    <g id="jigPlaced"></g><g id="jigLoose">${pieceEls}</g></svg>`;
+  J.svg=stage.querySelector('svg'); J.loose=stage.querySelector('#jigLoose'); J.placedLayer=stage.querySelector('#jigPlaced'); J.ghost=stage.querySelector('#jigGhost');
+  J.svg.addEventListener('pointerdown',jigDown);
+  J.svg.addEventListener('pointermove',jigMove);
+  J.svg.addEventListener('pointerup',jigUp);
+  J.svg.addEventListener('pointercancel',jigUp);
+  const res=document.getElementById('jigResult'); if(res) res.innerHTML='';
+  const eb=document.getElementById('jigEdgeBtn'); if(eb) eb.classList.add('secondary');
+  jigStatus();
+}
+function jigStatus(){
+  const el=document.getElementById('jigStatus'); if(!el||!J) return;
+  const corners=J.pieces.filter(p=>p.isCorner&&!p.placed).length;
+  el.textContent = J.done ? `🎉 All ${J.total} pieces placed!` : `🧩 ${J.placed} of ${J.total} pieces placed · ${J.n}-piece puzzle`;
+}
+function jigPoint(ev){
+  const pt=J.svg.createSVGPoint(); pt.x=ev.clientX; pt.y=ev.clientY;
+  return pt.matrixTransform(J.svg.getScreenCTM().inverse());
+}
+function jigSetPos(p,g){ g.setAttribute('transform',`translate(${jpF(p.tx)} ${jpF(p.ty)})`); }
+function jigDown(ev){
+  if(!J||J.done||J.drag) return;
+  const g=ev.target.closest && ev.target.closest('g.jp.loose'); if(!g) return;
+  ev.preventDefault();
+  const p=J.pieces[+g.dataset.i], pt=jigPoint(ev);
+  J.drag={p,g,id:ev.pointerId,ox:pt.x-p.tx,oy:pt.y-p.ty};
+  g.classList.add('drag'); J.loose.appendChild(g);          // lift it to the front
+  try{ J.svg.setPointerCapture(ev.pointerId); }catch(e){}
+}
+function jigMove(ev){
+  const d=J&&J.drag; if(!d||ev.pointerId!==d.id) return;
+  const pt=jigPoint(ev), p=d.p, lo=-J.M+J.cell*.3, hiX=J.W+J.M-J.cell*.3, hiY=J.H+J.M-J.cell*.3;
+  p.tx=Math.min(hiX,Math.max(lo,p.cx+pt.x-d.ox))-p.cx;      // keep the piece inside the play area
+  p.ty=Math.min(hiY,Math.max(lo,p.cy+pt.y-d.oy))-p.cy;
+  jigSetPos(p,d.g);
+}
+function jigUp(ev){
+  const d=J&&J.drag; if(!d||ev.pointerId!==d.id) return;
+  J.drag=null; d.g.classList.remove('drag');
+  try{ J.svg.releasePointerCapture(ev.pointerId); }catch(e){}
+  const p=d.p;
+  if(Math.hypot(p.tx,p.ty)<=J.snap){                        // close enough: click into place
+    p.tx=0; p.ty=0; p.placed=true; jigSetPos(p,d.g);
+    d.g.classList.remove('loose','dim'); d.g.classList.add('snap'); J.placedLayer.appendChild(d.g);
+    d.g.style.pointerEvents='none';
+    J.placed++; jigStatus();
+    if(J.placed===J.total) jigFinish();
+  }
+}
+function jigPeek(){
+  if(!J||!J.ghost) return;
+  const on=J.ghost.getAttribute('opacity')==='0';
+  J.ghost.setAttribute('opacity', on?'.4':'0');
+  const b=document.getElementById('jigPeekBtn'); if(b) b.classList.toggle('secondary',!on);
+}
+function jigEdges(){
+  if(!J||!J.svg) return;
+  J.edgesOnly=!J.edgesOnly;
+  J.svg.querySelectorAll('g.jp.loose.inner').forEach(g=>g.classList.toggle('dim',J.edgesOnly));
+  const b=document.getElementById('jigEdgeBtn'); if(b) b.classList.toggle('secondary',!J.edgesOnly);
+}
+function jigShuffle(){
+  if(!J) return;
+  if(!J.done && J.placed>0 && !confirm('Start a new puzzle? The pieces you have placed will be scattered again.')) return;
+  jigStart();
+}
+function jigSliderInput(v){
+  const el=document.getElementById('jigCount'); if(el) el.textContent=jigLevels()[+v]+' pieces';
+}
+function jigSliderChange(v){
+  if(!J) return;
+  const idx=+v;
+  if(!J.done && J.placed>0 && !confirm('Change the difficulty? You will start a new puzzle.')){
+    const r=document.getElementById('jigRange'); if(r) r.value=jigLevelIdx; jigSliderInput(jigLevelIdx); return;
+  }
+  jigLevelIdx=idx; jigStart();
+}
+function jigNextLevel(){ const max=jigLevels().length-1; if(jigLevelIdx<max){ jigLevelIdx++; const r=document.getElementById('jigRange'); if(r) r.value=jigLevelIdx; jigSliderInput(jigLevelIdx); jigStart(); window.scrollTo({top:0,behavior:'smooth'}); } }
+function jigFinish(){
+  J.done=true;
+  const l=J.l, prev=jigScore(l.id), starting=(jigLevelIdx===0);
+  let raw=prev, msg;
+  if(prev<JIG_POINTS){ raw=JIG_POINTS; msg=`⭐ <strong>+${JIG_POINTS} points!</strong> You finished the ${J.n}-piece puzzle. The difficulty slider is now unlocked — try a harder one for ${JIG_POINTS} more!`; }
+  else if(!starting && prev<2*JIG_POINTS){ raw=2*JIG_POINTS; msg=`🌟 <strong>+${JIG_POINTS} bonus points</strong> for finishing a harder ${J.n}-piece puzzle!`; }
+  else if(prev>=2*JIG_POINTS){ msg=`✅ Well done! You already have every point for this puzzle — this play adds to your badges.`; }
+  else { msg=`✅ Well done! Finish a <strong>harder</strong> puzzle to earn your ${JIG_POINTS} bonus points — this play adds to your badges.`; }
+  recordActivityScore(l.id,'jigsaw',raw,2*JIG_POINTS,true);   // every finished play counts towards badges
+  const stage=document.getElementById('jigStage'); if(stage) stage.classList.add('complete');
+  jigStatus();
+  const levels=jigLevels(), unlocked=jigUnlocked(l.id), canGoHarder=unlocked && jigLevelIdx<levels.length-1;
+  const name=(l.jigsawName||'').trim();
+  const res=document.getElementById('jigResult');
+  if(res) res.innerHTML=`<div class="jig-win">🎉 You built the picture${name?`: <span style="font-size:1.15em">${esc(name)}</span>`:''}!<br><span style="font-weight:700">${msg}</span></div>
+    <div class="toolbar"><button class="btn" onclick="jigShuffle()">Play again</button>
+      ${canGoHarder?`<button class="btn gold" onclick="jigNextLevel()">Try ${levels[jigLevelIdx+1]} pieces ➜</button>`:''}
+      <button class="btn secondary" onclick="go('activity')">Choose another activity</button></div>`;
+  const bk=document.getElementById('jigBanked'); if(bk) bk.textContent=bankedLine(l.id,'jigsaw',2*JIG_POINTS);
+  // refresh the lock message and slider now that the puzzle may have unlocked them
+  const r=document.getElementById('jigRange'); if(r){ r.disabled=!unlocked; r.max=levels.length-1; }
+  const lock=document.getElementById('jigLock'), sc=jigScore(l.id);
+  if(lock) lock.innerHTML = sc>=2*JIG_POINTS ? `🔓 You have earned every point for this puzzle. Keep playing at any size to grow your badges!`
+    : `🔓 Slider unlocked! Finish a <strong>harder</strong> puzzle once to earn <strong>+${JIG_POINTS} bonus points</strong>. After that, extra plays earn badges only.`;
+}
+
+/* ---- Teacher: jigsaw picture ---- */
+let draftJigsawImage=null;
+function handleJigsawFile(input){
+  const file=input.files && input.files[0]; if(!file) return;
+  const note=document.getElementById('jigImgNote');
+  if(!/^image\//.test(file.type)){ note.textContent='That file is not an image. Choose a JPG, PNG or WebP.'; return; }
+  note.textContent='Preparing image…';
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const img=new Image();
+    img.onload=()=>{
+      const make=(max,q)=>{
+        const scale=Math.min(1,max/Math.max(img.width,img.height));
+        const c=document.createElement('canvas'); c.width=Math.round(img.width*scale); c.height=Math.round(img.height*scale);
+        const x=c.getContext('2d'); x.fillStyle='#fff'; x.fillRect(0,0,c.width,c.height); x.drawImage(img,0,0,c.width,c.height);
+        return c.toDataURL('image/jpeg',q);
+      };
+      // Keep it sharp enough to cut into pieces but small enough for the lesson record.
+      let out=make(1000,.78);
+      if(kb(out)>230) out=make(900,.65);
+      if(kb(out)>230) out=make(800,.55);
+      if(kb(out)>230) out=make(700,.45);
+      draftJigsawImage=out; renderJigsawField();
+    };
+    img.onerror=()=>{ note.textContent='That image could not be read. Try a different file.'; };
+    img.src=e.target.result;
+  };
+  reader.onerror=()=>{ note.textContent='That image could not be read. Try a different file.'; };
+  reader.readAsDataURL(file);
+}
+function removeDraftJigsaw(){ draftJigsawImage=null; const n=document.getElementById('tfJigsawName'); if(n) n.value=''; renderJigsawField(); }
+function renderJigsawField(){
+  const wrap=document.getElementById('jigField'); if(!wrap) return;
+  wrap.innerHTML = draftJigsawImage ? `
+    <img class="img-preview" src="${draftJigsawImage}" alt="Jigsaw picture preview">
+    <div class="img-meta">About ${kb(draftJigsawImage)} KB. Children will build this picture from jigsaw pieces.</div>
+    <div class="toolbar">
+      <label class="btn secondary" style="cursor:pointer">Replace picture<input type="file" accept="image/*" style="display:none" onchange="handleJigsawFile(this)"></label>
+      <button class="btn danger" onclick="removeDraftJigsaw()">Remove jigsaw</button>
+    </div><div id="jigImgNote" class="img-meta"></div>` : `
+    <div class="img-drop"><div style="font-size:30px">🧩</div>
+      <p class="muted" style="margin:6px 0 12px">Add a clear, colourful picture of the Bible character or event (optional).</p>
+      <label class="btn" style="cursor:pointer">Choose image<input type="file" accept="image/*" style="display:none" onchange="handleJigsawFile(this)"></label>
+      <div id="jigImgNote" class="img-meta"></div></div>`;
+}
+
 /* ===================== BIBLE READING (weekly plan by age group) ===================== */
 function readingPlanFor(l, key){
   const rp = l && l.readingPlan;
@@ -2728,11 +3066,12 @@ function renderCharacterSummary(){
 }
 function addCharacterRow(){ teacherCharacters.push({name:'',clue:''}); renderCharacterRows(); }
 function removeCharacterRow(i){ teacherCharacters.splice(i,1); if(!teacherCharacters.length) teacherCharacters=[{name:'',clue:''}]; renderCharacterRows(); }
-function cancelEdit(){ editingLessonId=null; teacherCharactersInitializedFor='unset'; draftImage=null; draftColoringImage=null; teacherSection='lessons'; renderTeacher(); }
-function teacherTab(name){ teacherSection=name; editingChallengeId=null; challengeInitFor='unset'; editingLessonId=null; teacherCharactersInitializedFor='unset'; draftImage=null; draftColoringImage=null; draftDownloadFile=null; flashMessage=null; renderTeacher(); }
+function cancelEdit(){ editingLessonId=null; teacherCharactersInitializedFor='unset'; draftImage=null; draftColoringImage=null; draftJigsawImage=null; teacherSection='lessons'; renderTeacher(); }
+function teacherTab(name){ teacherSection=name; editingChallengeId=null; challengeInitFor='unset'; editingLessonId=null; teacherCharactersInitializedFor='unset'; draftImage=null; draftColoringImage=null; draftJigsawImage=null; draftDownloadFile=null; flashMessage=null; renderTeacher(); }
 function teacherEdit(id){ editingLessonId=id; teacherSection='editor'; teacherCharactersInitializedFor='unset';
   draftImage = id ? (lessonImage(getLesson(id))||null) : null;
   draftColoringImage = id ? ((getLesson(id)||{}).coloringImage || null) : null;
+  draftJigsawImage = id ? ((getLesson(id)||{}).jigsawImage || null) : null;
   flashMessage=null; renderTeacher(); }
 function teacherPreview(id){ teacherPreviewMode=true; if(id){ currentLessonId=id; archiveLessonId=id; } go('lesson'); }
 async function deleteLesson(id){
@@ -2921,6 +3260,11 @@ function teacherEditor(){
   <div class="banner warn" id="teacherBanner" style="display:none"></div>
   <label class="field">Lesson picture</label><div id="imgField"></div>
   <label class="field">Coloring page outline (optional)</label><div id="colorField"></div>
+  <label class="field">🖼️ Bible Jigsaw (optional)</label>
+  <p class="muted" style="margin:0 0 6px">Upload a picture and name the Bible character or event it shows. The app cuts it into classic jigsaw pieces — 16 to 32 pieces for ages 6–9, 24 to 48 for ages 10–12 and 6 to 12 for ages 3–5. Children must finish the smallest size first to unlock the difficulty slider.</p>
+  <div id="jigField"></div>
+  <label class="field">Name of the character or event in the picture</label>
+  <input class="input" id="tfJigsawName" placeholder="e.g. Daniel in the lions’ den" value="${esc(editing?.jigsawName||'')}">
   <label class="field">Maze activity</label>
   <select class="input" id="tfMazeEnabled">
     <option value="yes" ${(editing?editing.mazeEnabled!==false:true)?'selected':''}>Yes — show a Maze this week</option>
@@ -3088,7 +3432,7 @@ function renderTeacher(){
     <span class="spacer"></span><button onclick="lockTeacher()">🔓 Log out</button>
   </div>${body}`;
   if(teacherSection==='challengeEditor') chRenderLists();
-  if(teacherSection==='editor'){ renderCharacterRows(); renderCrosswordEditor(); renderImageField(); renderColoringField(); }
+  if(teacherSection==='editor'){ renderCharacterRows(); renderCrosswordEditor(); renderImageField(); renderColoringField(); renderJigsawField(); }
   if(teacherSection==='class') buildEngagementTable().then(html=>{ const c=document.getElementById('classCard'); if(c) c.innerHTML=html; });
   if(teacherSection==='progress') teacherReports().then(html=>{ const c=document.getElementById('reportsCard'); if(c) c.innerHTML=html; });
   if(teacherSection==='colorings') renderColoringsGallery().then(html=>{ const c=document.getElementById('coloringsCard'); if(c) c.innerHTML=html; });
@@ -3122,11 +3466,14 @@ async function publishLesson(){
     banner.textContent='Pick the lesson date. The lesson with the latest date is the one shown on Current Theme.';
     banner.scrollIntoView({behavior:'smooth',block:'center'}); return;
   }
+  if(draftJigsawImage && !val('tfJigsawName')){ banner.style.background='#FDEBEB'; banner.textContent='Bible Jigsaw: please type the name of the character or event in the picture (children see it when they finish the puzzle), or remove the jigsaw picture.'; return; }
   const existing = editingLessonId ? getLesson(editingLessonId) : null;
   const lessonObj = {
     date: formatLessonDate(dateTs),
     image: draftImage || '',
     coloringImage: draftColoringImage || '',
+    jigsawImage: draftJigsawImage || '',
+    jigsawName: draftJigsawImage ? val('tfJigsawName') : '',
     mazeEnabled: val('tfMazeEnabled') !== 'no',
     crossword,
     crosswordEnabled: val('tfCwEnabled') !== 'no',
@@ -3183,6 +3530,7 @@ async function publishLesson(){
     teacherCharactersInitializedFor = 'unset';
     draftImage = null;
     draftColoringImage = null;
+    draftJigsawImage = null;
     const savedBits = [];
     savedBits.push(lessonObj.quiz.length + ' quiz question' + (lessonObj.quiz.length===1?'':'s'));
     savedBits.push(lessonObj.characters.length + ' "Who am I?" character' + (lessonObj.characters.length===1?'':'s'));
@@ -3885,7 +4233,7 @@ Object.assign(window, {
   selectArchiveLesson, selectWeeklyBoardLesson,
   setColoringFilter, openColoringMark, closeColoringMark, updateMarkTotal, saveColoringMark,
   zoomColoring, undoColoring, redoColoring,
-  renderMaze, setMazeMode, printMaze,
+  renderMaze, setMazeMode, printMaze, mazeLevelPreview, setMazeLevel,
   renderCrossword, cwCheck, cwHint, cwClueClick, printCrossword,
   renderChallengeScreen, setChallengeActivity, selectChallenge, chReplay, chPickAnother, selectChallengeBoard, setLeaderboardTab,
   teacherEditChallenge, teacherPreviewChallenge, chCancel, toggleChallengeStatus, deleteChallenge, publishChallenge,
@@ -3894,6 +4242,7 @@ Object.assign(window, {
   navTo, teacherLogin, lockTeacher, teacherTab, teacherEdit, teacherPreview, cancelEdit, deleteLesson, toggleLessonStatus,
   addCharacterRow, removeCharacterRow, handleImageFile, removeDraftImage,
   handleColoringFile, removeDraftColoringImage,
+  jigSliderInput, jigSliderChange, jigPeek, jigEdges, jigShuffle, jigNextLevel, handleJigsawFile, removeDraftJigsaw,
   publishLesson, changePassword, seedStarterLessons
 });
 </script>
